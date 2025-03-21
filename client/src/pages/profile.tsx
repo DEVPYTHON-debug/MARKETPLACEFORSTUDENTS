@@ -27,6 +27,33 @@ export default function Profile() {
   const { user, isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
+    if (isLoading) return;
+
+    if (user && user.isBanned) {
+      toast({
+        title: "Account Suspended",
+        description: "Your account has been suspended. Please contact support.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (user && !user.isVerified) {
+      toast({
+        title: "Email Verification Required",
+        description: "Please verify your email to access all features.",
+        variant: "warning",
+      });
+    }
+
+    if (isUnauthorizedError(user)) {
+      toast({
+        title: "Authorization Error",
+        description: "You do not have permission to access this page.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!isLoading && !isAuthenticated) {
       toast({
         title: "Unauthorized",
