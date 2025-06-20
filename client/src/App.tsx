@@ -14,6 +14,9 @@ import AddMoney from "@/pages/add-money";
 import EditProfile from "@/pages/edit-profile";
 import CreateService from "@/pages/create-service";
 import CreateGig from "@/pages/create-gig";
+import ManageService from "@/pages/manage-service";
+import ManageGig from "@/pages/manage-gig";
+import ManageBid from "@/pages/manage-bid";
 import Chat from "@/pages/chat";
 import Notifications from "@/pages/notifications";
 import KYC from "@/pages/kyc";
@@ -47,6 +50,9 @@ function Router() {
       <Route path="/edit-profile" component={EditProfile} />
       <Route path="/create-service" component={CreateService} />
       <Route path="/create-gig" component={CreateGig} />
+      <Route path="/manage-service/:serviceId" component={ManageService} />
+      <Route path="/manage-gig/:gigId" component={ManageGig} />
+      <Route path="/manage-bid/:bidId" component={ManageBid} />
       <Route path="/chat" component={Chat} />
       <Route path="/notifications" component={Notifications} />
       <Route path="/kyc" component={KYC} />

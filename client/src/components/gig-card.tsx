@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MessageCircle, Calendar, DollarSign, Users } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useLocation } from "wouter";
 
 interface GigCardProps {
   gig: {
@@ -28,6 +29,7 @@ interface GigCardProps {
 
 export default function GigCard({ gig, showBidButton = false, isOwner = false }: GigCardProps) {
   const { user } = useAuth();
+  const [, setLocation] = useLocation();
   
   // Check if the current user is the owner of this gig
   const isGigOwner = user?.id === gig.clientId;
@@ -117,7 +119,7 @@ export default function GigCard({ gig, showBidButton = false, isOwner = false }:
                     size="sm" 
                     variant="outline" 
                     className="border-gray-700 hover:border-neon-blue"
-                    onClick={() => window.location.href = `/manage-gig/${gig.id}`}
+                    onClick={() => setLocation(`/manage-gig/${gig.id}`)}
                   >
                     <MessageCircle className="w-4 h-4 mr-1" />
                     Manage

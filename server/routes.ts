@@ -108,6 +108,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch('/api/services/:id', isAuthenticated, upload.single('image'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const serviceId = req.params.id;
+      
+      // Check if the user owns this service
+      const existingService = await storage.getServiceById(serviceId);
+      if (!existingService || existingService.providerId !== userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      const imageUrl = req.file ? getFileUrl(req.file.filename) : undefined;
+      
+      // Parse tags if it's a JSON string
+      let tags = req.body.tags;
+      if (tags && typeof tags === 'string') {
+        try {
+          tags = JSON.parse(tags);
+        } catch (e) {
+          tags = [];
+        }
+      }
+      
+      const updateData = {
+        ...req.body,
+        ...(imageUrl && { imageUrl }),
+        ...(tags && { tags }),
+      };
+      
+      const service = await storage.updateService(serviceId, updateData);
+      res.json(service);
+    } catch (error: any) {
+      console.error("Error updating service:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ 
+          message: "Validation error", 
+          details: error.errors 
+        });
+      }
+      res.status(500).json({ message: "Failed to update service" });
+    }
+  });
+
+  app.delete('/api/services/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const serviceId = req.params.id;
+      
+      // Check if the user owns this service
+      const existingService = await storage.getServiceById(serviceId);
+      if (!existingService || existingService.providerId !== userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      await storage.deleteService(serviceId);
+      res.json({ message: "Service deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting service:", error);
+      res.status(500).json({ message: "Failed to delete service" });
+    }
+  });
+
   // Gig routes
   app.get('/api/gigs', async (req, res) => {
     try {
@@ -122,6 +184,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching gigs:", error);
       res.status(500).json({ message: "Failed to fetch gigs" });
+    }
+  });
+
+  app.get('/api/gigs/:id', async (req, res) => {
+    try {
+      const gig = await storage.getGigById(req.params.id);
+      if (!gig) {
+        return res.status(404).json({ message: "Gig not found" });
+      }
+      res.json(gig);
+    } catch (error) {
+      console.error("Error fetching gig:", error);
+      res.status(500).json({ message: "Failed to fetch gig" });
     }
   });
 
@@ -170,6 +245,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user gigs:", error);
       res.status(500).json({ message: "Failed to fetch gigs" });
+    }
+  });
+
+  app.patch('/api/gigs/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const gigId = req.params.id;
+      
+      // Check if the user owns this gig
+      const existingGig = await storage.getGigById(gigId);
+      if (!existingGig || existingGig.clientId !== userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      const gig = await storage.updateGig(gigId, req.body);
+      res.json(gig);
+    } catch (error: any) {
+      console.error("Error updating gig:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ 
+          message: "Validation error", 
+          details: error.errors 
+        });
+      }
+      res.status(500).json({ message: "Failed to update gig" });
+    }
+  });
+
+  app.delete('/api/gigs/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const gigId = req.params.id;
+      
+      // Check if the user owns this gig
+      const existingGig = await storage.getGigById(gigId);
+      if (!existingGig || existingGig.clientId !== userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      await storage.deleteGig(gigId);
+      res.json({ message: "Gig deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting gig:", error);
+      res.status(500).json({ message: "Failed to delete gig" });
     }
   });
 

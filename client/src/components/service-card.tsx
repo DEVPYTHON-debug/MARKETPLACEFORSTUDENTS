@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Star, MapPin } from "lucide-react";
+import { useLocation } from "wouter";
 
 interface ServiceCardProps {
   service: {
@@ -27,6 +28,7 @@ interface ServiceCardProps {
 
 export default function ServiceCard({ service }: ServiceCardProps) {
   const { user } = useAuth();
+  const [, setLocation] = useLocation();
   
   // Check if the current user is the provider of this service
   const isServiceProvider = user?.id === service.providerId || user?.id === service.provider?.id;
@@ -107,7 +109,11 @@ export default function ServiceCard({ service }: ServiceCardProps) {
           </Button>
         )}
         {isServiceProvider && (
-          <Button variant="outline" className="w-full border-gray-700 hover:border-neon-orange">
+          <Button 
+            variant="outline" 
+            className="w-full border-gray-700 hover:border-neon-orange"
+            onClick={() => setLocation(`/manage-service/${service.id}`)}
+          >
             Manage Service
           </Button>
         )}
