@@ -1,7 +1,9 @@
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MessageCircle, Calendar, DollarSign, Users } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 
 interface GigCardProps {
   gig: {
