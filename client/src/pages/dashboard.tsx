@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { useLocation } from "wouter";
 import Navigation from "@/components/navigation";
 import ServiceCard from "@/components/service-card";
 import GigCard from "@/components/gig-card";
@@ -27,6 +28,7 @@ import {
 export default function Dashboard() {
   const { toast } = useToast();
   const { user, isAuthenticated, isLoading } = useAuth();
+  const [, setLocation] = useLocation();
 
   // Redirect if not authenticated
   useEffect(() => {
