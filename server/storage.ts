@@ -42,6 +42,7 @@ export interface IStorage {
   getServiceById(id: string): Promise<Service | undefined>;
   createService(service: InsertService): Promise<Service>;
   updateService(id: string, updates: Partial<InsertService>): Promise<Service>;
+  deleteService(id: string): Promise<void>;
   getServicesByProvider(providerId: string): Promise<Service[]>;
   
   // Gig operations
@@ -179,6 +180,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(services.id, id))
       .returning();
     return service;
+  }
+
+  async deleteService(id: string): Promise<void> {
+    await db.delete(services).where(eq(services.id, id));
   }
 
   async getServicesByProvider(providerId: string): Promise<Service[]> {
