@@ -73,6 +73,7 @@ export const gigs = pgTable("gigs", {
   bidCount: integer("bid_count").default(0),
   selectedBidId: uuid("selected_bid_id"),
   isActive: boolean("is_active").default(true),
+  imageUrl: varchar("image_url"), // Optional image for the gig
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

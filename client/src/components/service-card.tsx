@@ -33,11 +33,20 @@ export default function ServiceCard({ service }: ServiceCardProps) {
 
   return (
     <Card className="bg-card-bg border-gray-800 glow-effect hover:shadow-neon-orange transition-all overflow-hidden">
-      <img 
-        src={imageUrl} 
-        alt={service.title}
-        className="w-full h-48 object-cover"
-      />
+      <div className="aspect-video bg-gradient-to-r from-neon-blue to-neon-orange flex items-center justify-center overflow-hidden">
+        {service.imageUrl ? (
+          <img
+            src={service.imageUrl}
+            alt={service.title}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <span className="text-white font-bold text-2xl">
+            {service.title.split(' ').map(word => word[0]).join('').slice(0, 2)}
+          </span>
+        )}
+      </div>
+      
       <CardContent className="p-6">
         <div className="flex items-center justify-between mb-2">
           <h4 className="font-semibold text-white truncate">{service.title}</h4>

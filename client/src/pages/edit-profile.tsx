@@ -27,6 +27,8 @@ export default function EditProfile() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [role, setRole] = useState("");
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -37,8 +39,19 @@ export default function EditProfile() {
   }, [user]);
 
   const updateProfileMutation = useMutation({
-    mutationFn: async (data: { firstName: string; lastName: string; role: string }) => {
-      return await apiRequest("PUT", "/api/user/profile", data);
+    mutationFn: async (data: FormData) => {
+      const response = await fetch("/api/user/profile", {
+        method: "PUT",
+        body: data,
+        credentials: "include",
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to update profile");
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -67,11 +80,16 @@ export default function EditProfile() {
       return;
     }
 
-    updateProfileMutation.mutate({
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      role
-    });
+    const formData = new FormData();
+    formData.append('firstName', firstName.trim());
+    formData.append('lastName', lastName.trim());
+    formData.append('role', role);
+    
+    if (selectedImage) {
+      formData.append('profileImage', selectedImage);
+    }
+    
+    updateProfileMutation.mutate(formData);
   };
 
   if (isLoading) {
@@ -114,13 +132,59 @@ export default function EditProfile() {
           <CardContent className="space-y-6">
             {/* Profile Picture */}
             <div className="flex items-center space-x-4">
-              <div className="w-20 h-20 neon-gradient rounded-full flex items-center justify-center text-white font-bold text-xl">
-                {firstName?.[0] || user?.email?.[0] || '?'}
+              <div className="relative">
+                {imagePreview ? (
+                  <img
+                    src={imagePreview}
+                    alt="Profile Preview"
+                    className="w-20 h-20 rounded-full object-cover border-2 border-neon-blue"
+                  />
+                ) : user?.profileImageUrl ? (
+                  <img
+                    src={user.profileImageUrl}
+                    alt="Profile"
+                    className="w-20 h-20 rounded-full object-cover border-2 border-gray-700"
+                  />
+                ) : (
+                  <div className="w-20 h-20 neon-gradient rounded-full flex items-center justify-center text-white font-bold text-xl">
+                    {firstName?.[0] || user?.email?.[0] || '?'}
+                  </div>
+                )}
               </div>
-              <Button variant="outline" className="border-gray-700 hover:border-neon-blue">
+              <Button 
+                variant="outline" 
+                className="border-gray-700 hover:border-neon-blue"
+                onClick={() => document.getElementById('profile-image-upload')?.click()}
+              >
                 <Camera className="w-4 h-4 mr-2" />
                 Change Photo
               </Button>
+              <input
+                id="profile-image-upload"
+                type="file"
+                accept="image/*"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) {
+                    if (file.size > 5 * 1024 * 1024) {
+                      toast({
+                        title: "File too large",
+                        description: "Please select an image smaller than 5MB",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    
+                    setSelectedImage(file);
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                      setImagePreview(e.target?.result as string);
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+                className="hidden"
+              />
             </div>
 
             {/* First Name */}

@@ -17,7 +17,9 @@ import {
   ArrowLeft,
   Plus,
   Calendar,
-  DollarSign
+  DollarSign,
+  Upload,
+  X
 } from "lucide-react";
 
 const categories = [
@@ -43,10 +45,23 @@ export default function CreateGig() {
   const [category, setCategory] = useState("");
   const [budget, setBudget] = useState("");
   const [deadline, setDeadline] = useState("");
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const createGigMutation = useMutation({
-    mutationFn: async (data: any) => {
-      return await apiRequest("POST", "/api/gigs", data);
+    mutationFn: async (data: FormData) => {
+      const response = await fetch("/api/gigs", {
+        method: "POST",
+        body: data,
+        credentials: "include",
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to create gig");
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -86,18 +101,49 @@ export default function CreateGig() {
       return;
     }
 
-    createGigMutation.mutate({
-      title: title.trim(),
-      description: description.trim(),
-      category,
-      budget: budget.trim(),
-      deadline: deadline // Send as string, will be transformed by schema
-    });
+    const formData = new FormData();
+    formData.append('title', title.trim());
+    formData.append('description', description.trim());
+    formData.append('category', category);
+    formData.append('budget', budget.trim());
+    formData.append('deadline', deadline);
+    
+    if (selectedImage) {
+      formData.append('image', selectedImage);
+    }
+    
+    createGigMutation.mutate(formData);
   };
 
   const formatBudgetExample = (input: string) => {
     if (!input) return "e.g., ₦5,000 - ₦8,000";
     return input;
+  };
+
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please select an image smaller than 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
   };
 
   return (
@@ -204,6 +250,53 @@ export default function CreateGig() {
                   />
                 </div>
               </div>
+            </div>
+
+            {/* Image Upload */}
+            <div className="space-y-2">
+              <Label htmlFor="image" className="text-gray-300">
+                Gig Image (Optional)
+              </Label>
+              {imagePreview ? (
+                <div className="relative">
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="w-full h-48 object-cover rounded-lg border border-gray-700"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={removeImage}
+                    className="absolute top-2 right-2"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="border-2 border-dashed border-gray-700 rounded-lg p-6 text-center hover:border-neon-blue transition-colors">
+                  <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-400 mb-2">Upload an image for your gig</p>
+                  <p className="text-gray-500 text-sm mb-4">PNG, JPG, GIF up to 5MB</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById('image-upload')?.click()}
+                    className="border-gray-700 hover:border-neon-blue"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Choose Image
+                  </Button>
+                  <input
+                    id="image-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    className="hidden"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="bg-blue-500 bg-opacity-10 border border-blue-500 border-opacity-30 rounded-lg p-4">

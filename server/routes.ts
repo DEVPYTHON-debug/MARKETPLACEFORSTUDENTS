@@ -1,7 +1,10 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import express from "express";
+import path from "path";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { upload, getFileUrl } from "./upload";
 import {
   insertServiceSchema,
   insertGigSchema,
@@ -14,6 +17,9 @@ import {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
+  
+  // Serve static files (uploaded images)
+  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
@@ -56,16 +62,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/services', isAuthenticated, async (req: any, res) => {
+  app.post('/api/services', isAuthenticated, upload.single('image'), async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      const imageUrl = req.file ? getFileUrl(req.file.filename) : null;
+      
       const serviceData = insertServiceSchema.parse({
         ...req.body,
         providerId: userId,
+        imageUrl,
       });
       const service = await storage.createService(serviceData);
       res.status(201).json(service);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating service:", error);
       if (error.name === 'ZodError') {
         return res.status(400).json({ 
@@ -118,16 +127,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/gigs', isAuthenticated, async (req: any, res) => {
+  app.post('/api/gigs', isAuthenticated, upload.single('image'), async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      const imageUrl = req.file ? getFileUrl(req.file.filename) : null;
+      
       const gigData = insertGigSchema.parse({
         ...req.body,
         clientId: userId,
+        imageUrl,
       });
       const gig = await storage.createGig(gigData);
       res.status(201).json(gig);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating gig:", error);
       if (error.name === 'ZodError') {
         return res.status(400).json({ 
@@ -275,16 +287,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update user profile
-  app.put('/api/user/profile', isAuthenticated, async (req: any, res) => {
+  app.put('/api/user/profile', isAuthenticated, upload.single('profileImage'), async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { firstName, lastName, role } = req.body;
+      const profileImageUrl = req.file ? getFileUrl(req.file.filename) : undefined;
       
-      const updatedUser = await storage.updateUser(userId, {
+      if (!firstName || !lastName) {
+        return res.status(400).json({ message: "First name and last name are required" });
+      }
+      
+      const updateData: any = {
         firstName,
         lastName,
         role
-      });
+      };
+      
+      if (profileImageUrl) {
+        updateData.profileImageUrl = profileImageUrl;
+      }
+      
+      const updatedUser = await storage.updateUser(userId, updateData);
       
       res.json(updatedUser);
     } catch (error) {

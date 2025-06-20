@@ -16,7 +16,9 @@ import {
   Briefcase, 
   ArrowLeft,
   Plus,
-  DollarSign
+  DollarSign,
+  Upload,
+  X
 } from "lucide-react";
 
 const categories = [
@@ -42,10 +44,23 @@ export default function CreateService() {
   const [category, setCategory] = useState("");
   const [price, setPrice] = useState("");
   const [priceType, setPriceType] = useState("fixed");
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const createServiceMutation = useMutation({
-    mutationFn: async (data: any) => {
-      return await apiRequest("POST", "/api/services", data);
+    mutationFn: async (data: FormData) => {
+      const response = await fetch("/api/services", {
+        method: "POST",
+        body: data,
+        credentials: "include",
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to create service");
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -85,14 +100,19 @@ export default function CreateService() {
       return;
     }
 
-    createServiceMutation.mutate({
-      title: title.trim(),
-      description: description.trim(),
-      category,
-      price: priceValue.toString(),
-      priceType,
-      tags: []
-    });
+    const formData = new FormData();
+    formData.append('title', title.trim());
+    formData.append('description', description.trim());
+    formData.append('category', category);
+    formData.append('price', priceValue.toString());
+    formData.append('priceType', priceType);
+    formData.append('tags', JSON.stringify([]));
+    
+    if (selectedImage) {
+      formData.append('image', selectedImage);
+    }
+    
+    createServiceMutation.mutate(formData);
   };
 
   return (
@@ -195,6 +215,75 @@ export default function CreateService() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            {/* Image Upload */}
+            <div className="space-y-2">
+              <Label htmlFor="image" className="text-gray-300">
+                Service Image (Optional)
+              </Label>
+              {imagePreview ? (
+                <div className="relative">
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="w-full h-48 object-cover rounded-lg border border-gray-700"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedImage(null);
+                      setImagePreview(null);
+                    }}
+                    className="absolute top-2 right-2"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="border-2 border-dashed border-gray-700 rounded-lg p-6 text-center hover:border-neon-blue transition-colors">
+                  <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-400 mb-2">Upload an image for your service</p>
+                  <p className="text-gray-500 text-sm mb-4">PNG, JPG, GIF up to 5MB</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById('service-image-upload')?.click()}
+                    className="border-gray-700 hover:border-neon-blue"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Choose Image
+                  </Button>
+                  <input
+                    id="service-image-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (file) {
+                        if (file.size > 5 * 1024 * 1024) {
+                          toast({
+                            title: "File too large",
+                            description: "Please select an image smaller than 5MB",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+                        
+                        setSelectedImage(file);
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                          setImagePreview(e.target?.result as string);
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="hidden"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="bg-yellow-500 bg-opacity-10 border border-yellow-500 border-opacity-30 rounded-lg p-4">
