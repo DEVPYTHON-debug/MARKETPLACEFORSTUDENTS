@@ -340,9 +340,9 @@ export default function Chat() {
           </div>
 
           {/* Chat Messages */}
-          <div className={`lg:col-span-2 ${selectedChatId ? 'block' : 'hidden lg:block'} flex flex-col`}>
+          <div className={`lg:col-span-2 ${selectedChatId ? 'block' : 'hidden lg:block'} flex flex-col h-[calc(100vh-6rem)]`}>
             {selectedChatId ? (
-              <Card className="bg-card-bg border-gray-800 flex-1 flex flex-col min-h-0">
+              <Card className="bg-card-bg border-gray-800 flex flex-col h-full min-h-0">
                 {/* Chat Header */}
                 <CardHeader className="border-b border-gray-800 pb-4">
                   <div className="flex items-center justify-between">
@@ -393,7 +393,7 @@ export default function Chat() {
                 </CardHeader>
 
                 {/* Messages */}
-                <CardContent className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+                <CardContent className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0 max-h-[calc(100vh-200px)]">
                   {messagesLoading ? (
                     <div className="flex justify-center items-center h-32">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-neon-blue"></div>
@@ -457,16 +457,38 @@ export default function Chat() {
                                       </div>
                                     </div>
                                   ) : (
-                                    <div className="flex items-center space-x-2 p-3 bg-gray-800 bg-opacity-60 rounded-lg border border-gray-600 hover:bg-gray-700 transition-colors cursor-pointer">
-                                      <Paperclip className="w-4 h-4 text-neon-blue" />
-                                      <a 
-                                        href={message.attachmentUrl} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="text-sm text-white hover:text-neon-blue transition-colors"
-                                      >
-                                        View Attachment
-                                      </a>
+                                    <div className="flex items-center justify-between p-3 bg-gray-800 bg-opacity-60 rounded-lg border border-gray-600 hover:bg-gray-700 transition-colors">
+                                      <div className="flex items-center space-x-2">
+                                        <Paperclip className="w-4 h-4 text-neon-blue" />
+                                        <span className="text-sm text-white">
+                                          {message.attachmentUrl?.split('/').pop()?.split('-').slice(2).join('-') || 'File'}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={() => window.open(message.attachmentUrl, '_blank')}
+                                          className="h-6 px-2 text-xs text-neon-blue hover:bg-neon-blue hover:text-black"
+                                        >
+                                          View
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={() => {
+                                            const link = document.createElement('a');
+                                            link.href = message.attachmentUrl!;
+                                            link.download = message.attachmentUrl?.split('/').pop() || 'file';
+                                            document.body.appendChild(link);
+                                            link.click();
+                                            document.body.removeChild(link);
+                                          }}
+                                          className="h-6 px-2 text-xs text-green-400 hover:bg-green-400 hover:text-black"
+                                        >
+                                          Download
+                                        </Button>
+                                      </div>
                                     </div>
                                   )}
                                 </div>
@@ -526,7 +548,7 @@ export default function Chat() {
                 </CardContent>
 
                 {/* Message Input */}
-                <div className="border-t border-gray-800 p-4 flex-shrink-0">
+                <div className="border-t border-gray-800 p-4 flex-shrink-0 sticky bottom-0 bg-gray-900 z-10">
                   {/* File Preview */}
                   {selectedFile && (
                     <div className="mb-3 p-3 bg-gray-800 rounded-lg border border-gray-700">
