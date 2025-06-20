@@ -62,6 +62,13 @@ export default function Chat() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: chats = [] } = useQuery<Chat[]>({
@@ -333,9 +340,9 @@ export default function Chat() {
           </div>
 
           {/* Chat Messages */}
-          <div className={`lg:col-span-2 ${selectedChatId ? 'block' : 'hidden lg:block'}`}>
+          <div className={`lg:col-span-2 ${selectedChatId ? 'block' : 'hidden lg:block'} flex flex-col`}>
             {selectedChatId ? (
-              <Card className="bg-card-bg border-gray-800 h-full flex flex-col">
+              <Card className="bg-card-bg border-gray-800 flex-1 flex flex-col min-h-0">
                 {/* Chat Header */}
                 <CardHeader className="border-b border-gray-800 pb-4">
                   <div className="flex items-center justify-between">
@@ -386,7 +393,7 @@ export default function Chat() {
                 </CardHeader>
 
                 {/* Messages */}
-                <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
+                <CardContent className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
                   {messagesLoading ? (
                     <div className="flex justify-center items-center h-32">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-neon-blue"></div>
@@ -431,22 +438,34 @@ export default function Chat() {
                               {message.attachmentUrl && (
                                 <div className="mb-2">
                                   {message.attachmentType?.includes('image') ? (
-                                    <img 
-                                      src={message.attachmentUrl} 
-                                      alt="Shared image"
-                                      className="max-w-full h-auto rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                                      onClick={() => window.open(message.attachmentUrl, '_blank')}
-                                    />
+                                    <div className="relative group">
+                                      <img 
+                                        src={message.attachmentUrl} 
+                                        alt="Shared image"
+                                        className="max-w-xs max-h-48 rounded-lg cursor-pointer hover:opacity-90 transition-opacity object-cover border border-gray-600"
+                                        onClick={() => window.open(message.attachmentUrl, '_blank')}
+                                      />
+                                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-lg transition-all duration-200 flex items-center justify-center">
+                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                          <div className="bg-black bg-opacity-70 rounded-full p-2">
+                                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
                                   ) : (
-                                    <div className="flex items-center space-x-2 p-2 bg-black bg-opacity-20 rounded-lg">
-                                      <Paperclip className="w-4 h-4" />
+                                    <div className="flex items-center space-x-2 p-3 bg-gray-800 bg-opacity-60 rounded-lg border border-gray-600 hover:bg-gray-700 transition-colors cursor-pointer">
+                                      <Paperclip className="w-4 h-4 text-neon-blue" />
                                       <a 
                                         href={message.attachmentUrl} 
                                         target="_blank" 
                                         rel="noopener noreferrer"
-                                        className="text-sm underline hover:no-underline"
+                                        className="text-sm text-white hover:text-neon-blue transition-colors"
                                       >
-                                        View File
+                                        View Attachment
                                       </a>
                                     </div>
                                   )}
@@ -507,7 +526,7 @@ export default function Chat() {
                 </CardContent>
 
                 {/* Message Input */}
-                <div className="border-t border-gray-800 p-4">
+                <div className="border-t border-gray-800 p-4 flex-shrink-0">
                   {/* File Preview */}
                   {selectedFile && (
                     <div className="mb-3 p-3 bg-gray-800 rounded-lg border border-gray-700">

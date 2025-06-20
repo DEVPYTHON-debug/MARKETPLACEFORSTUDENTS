@@ -464,9 +464,26 @@ export class DatabaseStorage implements IStorage {
       .where(sql`${userId} = ANY(${chats.participants})`)
       .orderBy(desc(chats.lastMessageAt));
 
+    // Remove duplicate conversations (ensure unique user pairs)
+    const uniqueChats = new Map();
+    
+    for (const chat of chatData) {
+      const otherParticipant = chat.participants.find(id => id !== userId);
+      if (otherParticipant) {
+        const key = [userId, otherParticipant].sort().join('-');
+        if (!uniqueChats.has(key) || (chat.lastMessageAt && (!uniqueChats.get(key).lastMessageAt || chat.lastMessageAt > uniqueChats.get(key).lastMessageAt))) {
+          uniqueChats.set(key, chat);
+        }
+      }
+    }
+    
+    const filteredChats = Array.from(uniqueChats.values()).sort((a, b) => 
+      new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()
+    );
+
     // Enrich with participant details
     const enrichedChats = await Promise.all(
-      chatData.map(async (chat) => {
+      filteredChats.map(async (chat) => {
         const participantDetails = await Promise.all(
           chat.participants.map(async (participantId) => {
             const user = await this.getUser(participantId);
