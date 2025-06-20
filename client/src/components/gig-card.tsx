@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 interface GigCardProps {
   gig: {
     id: string;
+    clientId: string;
     title: string;
     description: string;
     budget: string;
@@ -42,19 +43,21 @@ export default function GigCard({ gig, showBidButton = false, isOwner = false }:
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [bidAmount, setBidAmount] = useState("");
   const [bidDescription, setBidDescription] = useState("");
+  const [deliveryTime, setDeliveryTime] = useState("");
   
   // Check if the current user is the owner of this gig
   const isGigOwner = user?.id === gig.clientId;
 
   const placeBidMutation = useMutation({
-    mutationFn: async (bidData: { amount: string; proposal: string }) => {
+    mutationFn: async (bidData: { amount: string; message: string; deliveryTime: string }) => {
       if (!user) throw new Error('Please log in to place bids');
       
       return apiRequest("POST", "/api/bids", {
         gigId: gig.id,
         bidderId: user.id,
         amount: bidData.amount,
-        proposal: bidData.proposal
+        message: bidData.message,
+        deliveryTime: bidData.deliveryTime
       });
     },
     onSuccess: () => {
@@ -65,6 +68,7 @@ export default function GigCard({ gig, showBidButton = false, isOwner = false }:
       setIsDialogOpen(false);
       setBidAmount("");
       setBidDescription("");
+      setDeliveryTime("");
       queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
     },
     onError: (error: any) => {
@@ -222,13 +226,26 @@ export default function GigCard({ gig, showBidButton = false, isOwner = false }:
                             className="bg-gray-800 border-gray-700 text-white min-h-[100px]"
                           />
                         </div>
+                        <div>
+                          <Label htmlFor="deliveryTime" className="text-gray-300">
+                            Delivery Time
+                          </Label>
+                          <Input
+                            id="deliveryTime"
+                            placeholder="e.g., 3 days, 1 week"
+                            value={deliveryTime}
+                            onChange={(e) => setDeliveryTime(e.target.value)}
+                            className="bg-gray-800 border-gray-700 text-white"
+                          />
+                        </div>
                         <div className="flex space-x-2">
                           <Button
                             onClick={() => placeBidMutation.mutate({
                               amount: bidAmount,
-                              proposal: bidDescription
+                              message: bidDescription,
+                              deliveryTime: deliveryTime
                             })}
-                            disabled={!bidAmount || !bidDescription || placeBidMutation.isPending}
+                            disabled={!bidAmount || !bidDescription || !deliveryTime || placeBidMutation.isPending}
                             className="neon-gradient flex-1"
                           >
                             {placeBidMutation.isPending ? "Submitting..." : "Submit Bid"}
