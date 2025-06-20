@@ -683,14 +683,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/chats/:chatId/messages', isAuthenticated, async (req: any, res) => {
+  app.post('/api/chats/:chatId/messages', isAuthenticated, upload.single('file'), async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const { chatId } = req.params;
       const { content } = req.body;
+      const file = req.file;
       
-      if (!content?.trim()) {
-        return res.status(400).json({ message: "Message content is required" });
+      if (!content?.trim() && !file) {
+        return res.status(400).json({ message: "Message content or file is required" });
       }
       
       // Verify user is participant in this chat
@@ -701,10 +702,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied to this chat" });
       }
       
+      let attachmentUrl = null;
+      let attachmentType = null;
+      
+      if (file) {
+        attachmentUrl = getFileUrl(file.filename);
+        attachmentType = file.mimetype;
+      }
+      
       const message = await storage.createMessage({
         chatId,
         senderId: userId,
-        content: content.trim()
+        content: content?.trim() || '',
+        attachmentUrl,
+        attachmentType
       });
       
       res.status(201).json(message);

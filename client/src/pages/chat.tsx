@@ -17,7 +17,10 @@ import {
   Video,
   MoreVertical,
   ArrowLeft,
-  Plus
+  Plus,
+  Paperclip,
+  Image,
+  X
 } from "lucide-react";
 
 interface Chat {
@@ -44,6 +47,8 @@ interface Message {
   chatId: string;
   senderId: string;
   content: string;
+  attachmentUrl?: string;
+  attachmentType?: string;
   createdAt: string;
 }
 
@@ -54,7 +59,10 @@ export default function Chat() {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: chats = [] } = useQuery<Chat[]>({
     queryKey: ["/api/chats"],
@@ -108,13 +116,33 @@ export default function Chat() {
   };
 
   const sendMessageMutation = useMutation({
-    mutationFn: async (data: { chatId: string; content: string }) => {
-      return await apiRequest("POST", `/api/chats/${data.chatId}/messages`, {
-        content: data.content
-      });
+    mutationFn: async (data: { chatId: string; content: string; file?: File }) => {
+      if (data.file) {
+        const formData = new FormData();
+        formData.append("content", data.content);
+        formData.append("file", data.file);
+        
+        const response = await fetch(`/api/chats/${data.chatId}/messages`, {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+        });
+        
+        if (!response.ok) {
+          throw new Error("Failed to send message with file");
+        }
+        
+        return response.json();
+      } else {
+        return await apiRequest("POST", `/api/chats/${data.chatId}/messages`, {
+          content: data.content
+        });
+      }
     },
     onSuccess: () => {
       setMessageInput("");
+      setSelectedFile(null);
+      setShowAttachmentMenu(false);
       queryClient.invalidateQueries({ queryKey: ["/api/chats", selectedChatId, "messages"] });
       queryClient.invalidateQueries({ queryKey: ["/api/chats"] });
     },
@@ -136,12 +164,28 @@ export default function Chat() {
   }, [messages]);
 
   const handleSendMessage = () => {
-    if (!messageInput.trim() || !selectedChatId) return;
+    if ((!messageInput.trim() && !selectedFile) || !selectedChatId) return;
     
     sendMessageMutation.mutate({
       chatId: selectedChatId,
-      content: messageInput.trim()
+      content: messageInput.trim() || (selectedFile ? `Shared a ${selectedFile.type.includes('image') ? 'photo' : 'file'}` : ''),
+      file: selectedFile || undefined
     });
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      setShowAttachmentMenu(false);
+    }
+  };
+
+  const removeSelectedFile = () => {
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const filteredChats = chats.filter((chat: Chat) =>
@@ -336,25 +380,92 @@ export default function Chat() {
                   {messages.length > 0 ? (
                     messages.map((message: Message) => {
                       const isOwnMessage = message.senderId === user?.id;
+                      const otherParticipant = selectedChat ? getOtherParticipant(selectedChat) : null;
+                      
                       return (
                         <div
                           key={message.id}
-                          className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
+                          className={`flex items-start space-x-2 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
                         >
-                          <div
-                            className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                              isOwnMessage
-                                ? 'neon-gradient text-white'
-                                : 'bg-gray-800 text-gray-200'
-                            }`}
-                          >
-                            <p className="text-sm">{message.content}</p>
-                            <p className={`text-xs mt-1 ${
-                              isOwnMessage ? 'text-gray-200' : 'text-gray-400'
+                          {!isOwnMessage && (
+                            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+                              {otherParticipant?.profileImage ? (
+                                <img 
+                                  src={otherParticipant.profileImage} 
+                                  alt={`${otherParticipant.firstName} ${otherParticipant.lastName}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gradient-to-br from-neon-blue to-blue-600 flex items-center justify-center text-white text-xs font-medium">
+                                  {otherParticipant ? 
+                                    `${otherParticipant.firstName?.charAt(0) || ''}${otherParticipant.lastName?.charAt(0) || ''}`.toUpperCase() || '?' 
+                                    : '?'
+                                  }
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          <div className={`flex flex-col ${isOwnMessage ? 'items-end' : 'items-start'}`}>
+                            <div
+                              className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl relative ${
+                                isOwnMessage
+                                  ? 'bg-gradient-to-r from-neon-blue to-blue-600 text-white rounded-br-md'
+                                  : 'bg-gray-800 text-gray-200 rounded-bl-md'
+                              }`}
+                            >
+                              {message.attachmentUrl && (
+                                <div className="mb-2">
+                                  {message.attachmentType?.includes('image') ? (
+                                    <img 
+                                      src={message.attachmentUrl} 
+                                      alt="Shared image"
+                                      className="max-w-full h-auto rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                      onClick={() => window.open(message.attachmentUrl, '_blank')}
+                                    />
+                                  ) : (
+                                    <div className="flex items-center space-x-2 p-2 bg-black bg-opacity-20 rounded-lg">
+                                      <Paperclip className="w-4 h-4" />
+                                      <a 
+                                        href={message.attachmentUrl} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="text-sm underline hover:no-underline"
+                                      >
+                                        View File
+                                      </a>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                              
+                              {message.content && (
+                                <p className="text-sm leading-relaxed">{message.content}</p>
+                              )}
+                            </div>
+                            
+                            <p className={`text-xs mt-1 px-2 ${
+                              isOwnMessage ? 'text-gray-400' : 'text-gray-500'
                             }`}>
                               {formatTime(message.createdAt)}
                             </p>
                           </div>
+                          
+                          {isOwnMessage && (
+                            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+                              {user?.profileImageUrl ? (
+                                <img 
+                                  src={user.profileImageUrl} 
+                                  alt={`${user.firstName} ${user.lastName}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gradient-to-br from-neon-orange to-orange-600 flex items-center justify-center text-white text-xs font-medium">
+                                  {`${user?.firstName?.charAt(0) || ''}${user?.lastName?.charAt(0) || ''}`.toUpperCase() || 'ME'}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       );
                     })
@@ -381,17 +492,89 @@ export default function Chat() {
 
                 {/* Message Input */}
                 <div className="border-t border-gray-800 p-4">
-                  <div className="flex space-x-3">
+                  {/* File Preview */}
+                  {selectedFile && (
+                    <div className="mb-3 p-3 bg-gray-800 rounded-lg border border-gray-700">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <Paperclip className="w-4 h-4 text-neon-blue" />
+                          <span className="text-sm text-gray-300">{selectedFile.name}</span>
+                          <span className="text-xs text-gray-500">
+                            ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                          </span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={removeSelectedFile}
+                          className="p-1 hover:bg-gray-700"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="flex space-x-3 items-end">
+                    {/* Attachment Button */}
+                    <div className="relative">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
+                        className="p-2 hover:bg-gray-800 text-gray-400 hover:text-neon-blue"
+                      >
+                        <Paperclip className="w-5 h-5" />
+                      </Button>
+                      
+                      {showAttachmentMenu && (
+                        <div className="absolute bottom-full mb-2 left-0 bg-gray-800 border border-gray-700 rounded-lg shadow-lg overflow-hidden">
+                          <button
+                            onClick={() => {
+                              fileInputRef.current?.click();
+                              setShowAttachmentMenu(false);
+                            }}
+                            className="flex items-center space-x-2 w-full px-4 py-2 text-left hover:bg-gray-700 text-gray-300"
+                          >
+                            <Image className="w-4 h-4" />
+                            <span className="text-sm">Photo</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              fileInputRef.current?.click();
+                              setShowAttachmentMenu(false);
+                            }}
+                            className="flex items-center space-x-2 w-full px-4 py-2 text-left hover:bg-gray-700 text-gray-300"
+                          >
+                            <Paperclip className="w-4 h-4" />
+                            <span className="text-sm">File</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Hidden File Input */}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      onChange={handleFileSelect}
+                      accept="image/*,.pdf,.doc,.docx,.txt"
+                      className="hidden"
+                    />
+                    
+                    {/* Message Input */}
                     <Input
                       value={messageInput}
                       onChange={(e) => setMessageInput(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                      placeholder="Type a message..."
+                      onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+                      placeholder={selectedFile ? "Add a message..." : "Type a message..."}
                       className="flex-1 bg-gray-900 border-gray-700 focus:border-neon-blue"
                     />
+                    
+                    {/* Send Button */}
                     <Button
                       onClick={handleSendMessage}
-                      disabled={!messageInput.trim() || sendMessageMutation.isPending}
+                      disabled={(!messageInput.trim() && !selectedFile) || sendMessageMutation.isPending}
                       className="neon-gradient hover:shadow-neon-blue transition-all"
                     >
                       {sendMessageMutation.isPending ? (
