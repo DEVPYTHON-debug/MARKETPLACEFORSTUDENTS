@@ -69,7 +69,16 @@ export default function Advertisements() {
 
   const createAdMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      return apiRequest("POST", "/api/advertisements", data);
+      return fetch("/api/advertisements", {
+        method: "POST",
+        body: data,
+      }).then(async (res) => {
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.message || "Failed to create advertisement");
+        }
+        return res.json();
+      });
     },
     onSuccess: () => {
       toast({
@@ -113,13 +122,25 @@ export default function Advertisements() {
   });
 
   const handleCreateAd = () => {
+    if (!newAd.title.trim() || !newAd.description.trim() || !newAd.category.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in title, description, and category.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const formData = new FormData();
-    Object.entries(newAd).forEach(([key, value]) => {
-      if (value) formData.append(key, value);
-    });
+    formData.append("title", newAd.title.trim());
+    formData.append("description", newAd.description.trim());
+    formData.append("price", newAd.price.trim() || "0");
+    formData.append("category", newAd.category.trim());
+    
     if (selectedFile) {
       formData.append("image", selectedFile);
     }
+
     createAdMutation.mutate(formData);
   };
 
@@ -154,6 +175,9 @@ export default function Advertisements() {
           <DialogContent className="bg-gray-900 border-gray-700 max-w-md">
             <DialogHeader>
               <DialogTitle className="text-white">Create Advertisement</DialogTitle>
+              <DialogDescription className="text-gray-400">
+                Post your item or service to the marketplace
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
