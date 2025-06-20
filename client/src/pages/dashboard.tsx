@@ -145,6 +145,36 @@ export default function Dashboard() {
           </div>
         </section>
 
+        {/* Quick Actions */}
+        <section className="bg-card-bg rounded-2xl p-6 border border-gray-800 shadow-lg">
+          <h3 className="text-xl font-bold text-white mb-4">Quick Actions</h3>
+          <div className="flex flex-wrap gap-3">
+            <Button 
+              className="neon-gradient text-white px-6 py-2 rounded-lg shadow-lg transform hover:scale-105 transition-all"
+              onClick={() => setLocation("/create-service")}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create Service
+            </Button>
+            <Button 
+              variant="outline" 
+              className="border-neon-blue text-neon-blue hover:bg-neon-blue hover:text-black transition-all"
+              onClick={() => setLocation("/create-gig")}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Post Gig
+            </Button>
+            <Button 
+              variant="outline" 
+              className="border-neon-orange text-neon-orange hover:bg-neon-orange hover:text-black transition-all"
+              onClick={() => setLocation("/advertisements")}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Post Ad
+            </Button>
+          </div>
+        </section>
+
         {/* Featured Services */}
         <section>
           <div className="flex items-center justify-between mb-6">

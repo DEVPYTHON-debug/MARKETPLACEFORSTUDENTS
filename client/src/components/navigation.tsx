@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { 
+  Home,
   Search, 
   Bell, 
   User, 
@@ -14,7 +15,10 @@ import {
   LogOut,
   Wallet,
   Zap,
-  Shield
+  Shield,
+  ShoppingBag,
+  MessageCircle,
+  Briefcase
 } from "lucide-react";
 
 export default function Navigation() {
