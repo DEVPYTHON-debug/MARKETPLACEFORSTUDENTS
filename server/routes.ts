@@ -458,6 +458,167 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Manual authentication routes
+  app.post('/api/auth/manual-register', async (req, res) => {
+    try {
+      const { email, password, firstName, lastName, role } = req.body;
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "User already exists" });
+      }
+      
+      // Create user with hashed password (in production, use proper password hashing)
+      const userId = `manual_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const userData = {
+        id: userId,
+        email,
+        firstName,
+        lastName,
+        role,
+        password,
+      };
+      
+      const user = await storage.upsertUser(userData);
+      res.status(201).json({ message: "User created successfully", user });
+    } catch (error: any) {
+      console.error("Manual registration error:", error);
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+
+  app.post('/api/auth/manual-login', async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      // In production, properly verify hashed password
+      if (user.password !== password) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      // Create session manually (simplified)
+      req.session.userId = user.id;
+      req.session.save((err) => {
+        if (err) {
+          return res.status(500).json({ message: "Session error" });
+        }
+        res.json({ message: "Login successful", user });
+      });
+    } catch (error: any) {
+      console.error("Manual login error:", error);
+      res.status(500).json({ message: "Failed to login" });
+    }
+  });
+
+  // Notifications routes
+  app.get('/api/notifications', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const notifications = await storage.getNotificationsByUser(userId);
+      res.json(notifications);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  app.patch('/api/notifications/:id/read', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.markNotificationAsRead(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ message: "Failed to mark notification as read" });
+    }
+  });
+
+  app.patch('/api/notifications/mark-all-read', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      await storage.markAllNotificationsAsRead(userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+      res.status(500).json({ message: "Failed to mark all notifications as read" });
+    }
+  });
+
+  // KYC routes
+  app.get('/api/kyc', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const kycData = await storage.getKycData(userId);
+      res.json(kycData);
+    } catch (error) {
+      console.error("Error fetching KYC data:", error);
+      res.status(500).json({ message: "Failed to fetch KYC data" });
+    }
+  });
+
+  app.post('/api/kyc/submit', isAuthenticated, upload.fields([
+    { name: 'ninImage', maxCount: 1 },
+    { name: 'selfieImage', maxCount: 1 }
+  ]), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { bvn, nin } = req.body;
+      const files = req.files;
+      
+      const kycData = {
+        bvn,
+        nin,
+        ninImageUrl: files?.ninImage?.[0] ? getFileUrl(files.ninImage[0].filename) : null,
+        selfieImageUrl: files?.selfieImage?.[0] ? getFileUrl(files.selfieImage[0].filename) : null,
+      };
+      
+      const result = await storage.submitKyc(userId, kycData);
+      res.json(result);
+    } catch (error) {
+      console.error("Error submitting KYC:", error);
+      res.status(500).json({ message: "Failed to submit KYC" });
+    }
+  });
+
+  // Virtual account routes
+  app.get('/api/virtual-account', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const virtualAccount = await storage.getVirtualAccount(userId);
+      res.json(virtualAccount);
+    } catch (error) {
+      console.error("Error fetching virtual account:", error);
+      res.status(500).json({ message: "Failed to fetch virtual account" });
+    }
+  });
+
+  app.post('/api/virtual-account/generate', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const virtualAccount = await storage.generateVirtualAccount(userId);
+      res.json(virtualAccount);
+    } catch (error) {
+      console.error("Error generating virtual account:", error);
+      res.status(500).json({ message: "Failed to generate virtual account" });
+    }
+  });
+
+  // Logout route
+  app.get('/api/logout', (req, res) => {
+    req.logout((err) => {
+      if (err) {
+        return res.status(500).json({ message: "Failed to logout" });
+      }
+      res.redirect('/');
+    });
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

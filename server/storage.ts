@@ -441,6 +441,106 @@ export class DatabaseStorage implements IStorage {
       activeGigs: activeGigs[0]?.count || 0,
     };
   }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    return result[0];
+  }
+
+  async getNotificationsByUser(userId: string): Promise<any[]> {
+    const result = await db.select().from(notifications).where(eq(notifications.userId, userId))
+      .orderBy(desc(notifications.createdAt));
+    return result;
+  }
+
+  async createNotification(notification: any): Promise<any> {
+    const result = await db.insert(notifications).values(notification).returning();
+    return result[0];
+  }
+
+  async markNotificationAsRead(notificationId: string): Promise<void> {
+    await db.update(notifications)
+      .set({ isRead: true })
+      .where(eq(notifications.id, notificationId));
+  }
+
+  async markAllNotificationsAsRead(userId: string): Promise<void> {
+    await db.update(notifications)
+      .set({ isRead: true })
+      .where(eq(notifications.userId, userId));
+  }
+
+  async getKycData(userId: string): Promise<any> {
+    const user = await this.getUser(userId);
+    return {
+      isKycVerified: user?.isKycVerified || false,
+      kycStatus: user?.kycStatus || 'pending',
+      bvn: user?.bvn,
+      nin: user?.nin,
+    };
+  }
+
+  async submitKyc(userId: string, kycData: any): Promise<any> {
+    const updateData = {
+      bvn: kycData.bvn,
+      nin: kycData.nin,
+      ninImageUrl: kycData.ninImageUrl,
+      selfieImageUrl: kycData.selfieImageUrl,
+      kycStatus: 'pending' as const,
+    };
+    
+    const result = await db.update(users)
+      .set(updateData)
+      .where(eq(users.id, userId))
+      .returning();
+    
+    // Create notification
+    await this.createNotification({
+      userId,
+      title: 'KYC Documents Submitted',
+      message: 'Your KYC documents have been submitted for review. We will notify you once approved.',
+      type: 'kyc_submitted',
+    });
+    
+    return result[0];
+  }
+
+  async getVirtualAccount(userId: string): Promise<any> {
+    const user = await this.getUser(userId);
+    if (!user?.virtualAccountNumber) return null;
+    
+    return {
+      accountNumber: user.virtualAccountNumber,
+      bankName: user.virtualAccountBank || 'Si-link Bank',
+    };
+  }
+
+  async generateVirtualAccount(userId: string): Promise<any> {
+    // Generate a mock virtual account number
+    const accountNumber = '30' + Math.random().toString().slice(2, 10);
+    const bankName = 'Si-link Bank';
+    
+    const result = await db.update(users)
+      .set({
+        virtualAccountNumber: accountNumber,
+        virtualAccountBank: bankName,
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    
+    // Create notification
+    await this.createNotification({
+      userId,
+      title: 'Virtual Account Created',
+      message: `Your virtual account ${accountNumber} has been created successfully!`,
+      type: 'account_created',
+    });
+    
+    return {
+      accountNumber,
+      bankName,
+    };
+  }
 }
 
 export const storage = new DatabaseStorage();
