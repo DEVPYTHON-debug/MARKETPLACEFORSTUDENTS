@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,7 +43,10 @@ export default function ManualLogin() {
         title: "Success",
         description: "Logged in successfully!",
       });
-      setLocation("/dashboard");
+      // Invalidate auth query to refresh user state
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      // Reload the page to ensure proper authentication state
+      window.location.href = "/dashboard";
     },
     onError: (error: any) => {
       toast({
