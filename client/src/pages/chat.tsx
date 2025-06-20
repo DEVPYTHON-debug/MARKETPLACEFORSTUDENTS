@@ -406,9 +406,9 @@ export default function Chat() {
                             </div>
                           )}
                           
-                          <div className={`flex flex-col ${isOwnMessage ? 'items-end' : 'items-start'}`}>
+                          <div className={`flex flex-col ${isOwnMessage ? 'items-end' : 'items-start'} max-w-xs lg:max-w-md`}>
                             <div
-                              className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl relative ${
+                              className={`px-4 py-3 rounded-2xl relative ${
                                 isOwnMessage
                                   ? 'bg-gradient-to-r from-neon-blue to-blue-600 text-white rounded-br-md'
                                   : 'bg-gray-800 text-gray-200 rounded-bl-md'
@@ -439,8 +439,10 @@ export default function Chat() {
                                 </div>
                               )}
                               
-                              {message.content && (
-                                <p className="text-sm leading-relaxed">{message.content}</p>
+                              {message.content && message.content.trim() && (
+                                <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">
+                                  {message.content}
+                                </p>
                               )}
                             </div>
                             

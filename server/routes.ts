@@ -357,10 +357,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/bids', isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
+      
+      // Log the request body to debug validation issues
+      console.log("Bid request body:", req.body);
+      
       const bidData = insertBidSchema.parse({
-        ...req.body,
+        gigId: req.body.gigId,
         bidderId: userId,
+        amount: req.body.amount,
+        proposal: req.body.proposal,
+        deliveryTime: req.body.deliveryTime || "7 days",
+        status: "pending"
       });
+      
       const bid = await storage.createBid(bidData);
       
       // Get gig details to notify the gig owner
@@ -376,9 +385,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      res.status(200).json(bid);
-    } catch (error) {
+      res.status(201).json(bid);
+    } catch (error: any) {
       console.error("Error creating bid:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ 
+          message: "Validation error", 
+          details: error.errors 
+        });
+      }
       res.status(500).json({ message: "Failed to create bid" });
     }
   });
