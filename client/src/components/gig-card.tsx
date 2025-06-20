@@ -76,6 +76,41 @@ export default function GigCard({ gig, showBidButton = false, isOwner = false }:
     },
   });
 
+  const startChatMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", "/api/chats/start", {
+        receiverId: gig.clientId,
+        gigId: gig.id,
+      });
+    },
+    onSuccess: (chat) => {
+      setLocation("/chat");
+      toast({
+        title: "Chat Started",
+        description: "You can now message the gig poster.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Start Chat",
+        description: error.message || "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleStartChat = () => {
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to start a chat.",
+        variant: "destructive",
+      });
+      return;
+    }
+    startChatMutation.mutate();
+  };
+
   const formatDeadline = (deadline: string) => {
     try {
       return formatDistanceToNow(new Date(deadline), { addSuffix: true });

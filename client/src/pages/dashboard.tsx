@@ -176,8 +176,16 @@ export default function Dashboard() {
             <CardContent className="p-6">
               <h3 className="text-xl font-bold mb-4 text-white">Your Profile</h3>
               <div className="flex items-center space-x-4 mb-6">
-                <div className="w-16 h-16 neon-gradient rounded-full flex items-center justify-center text-white font-bold text-xl">
-                  {user?.firstName?.[0] || user?.email?.[0] || '?'}
+                <div className="w-16 h-16 neon-gradient rounded-full flex items-center justify-center text-white font-bold text-xl overflow-hidden">
+                  {user?.profileImageUrl ? (
+                    <img 
+                      src={user.profileImageUrl} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  ) : (
+                    user?.firstName?.[0] || user?.email?.[0] || '?'
+                  )}
                 </div>
                 <div>
                   <h4 className="font-semibold text-white">

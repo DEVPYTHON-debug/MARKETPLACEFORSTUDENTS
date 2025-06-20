@@ -2,10 +2,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Star, MapPin } from "lucide-react";
+import { Star, MapPin, MessageCircle } from "lucide-react";
 import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 interface ServiceCardProps {
@@ -64,6 +64,42 @@ export default function ServiceCard({ service }: ServiceCardProps) {
       });
     },
   });
+
+  const startChatMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", "/api/chats/start", {
+        receiverId: service.providerId,
+        serviceId: service.id,
+      });
+    },
+    onSuccess: (chat) => {
+      setLocation("/chat");
+      toast({
+        title: "Chat Started",
+        description: "You can now message the service provider.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Start Chat",
+        description: error.message || "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleStartChat = () => {
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to start a chat.",
+        variant: "destructive",
+      });
+      return;
+    }
+    startChatMutation.mutate();
+  };
+
   const mockImages = [
     "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200",
     "https://images.unsplash.com/photo-1581092160562-40aa08e78837?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200",

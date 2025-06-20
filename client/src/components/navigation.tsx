@@ -106,6 +106,26 @@ export default function Navigation() {
                   </div>
                 </div>
                 <DropdownMenuSeparator className="bg-gray-700" />
+                <DropdownMenuItem onClick={() => window.location.href = "/"}>
+                  <Home className="mr-2 h-4 w-4" />
+                  Home
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => window.location.href = "/services"}>
+                  <Search className="mr-2 h-4 w-4" />
+                  Services
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => window.location.href = "/gigs"}>
+                  <Briefcase className="mr-2 h-4 w-4" />
+                  Gigs
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => window.location.href = "/advertisements"}>
+                  <ShoppingBag className="mr-2 h-4 w-4" />
+                  Marketplace
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => window.location.href = "/chat"}>
+                  <MessageCircle className="mr-2 h-4 w-4" />
+                  Chat
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => window.location.href = "/profile"}>
                   <User className="mr-2 h-4 w-4" />
                   Profile

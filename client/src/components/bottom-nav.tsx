@@ -8,7 +8,8 @@ import {
   Search, 
   Briefcase, 
   MessageCircle, 
-  User 
+  User,
+  ShoppingBag
 } from "lucide-react";
 
 export default function BottomNav() {
@@ -26,8 +27,8 @@ export default function BottomNav() {
     { path: "/", icon: Home, label: "Home" },
     { path: "/services", icon: Search, label: "Search" },
     { path: "/gigs", icon: Briefcase, label: "Gigs" },
+    { path: "/advertisements", icon: ShoppingBag, label: "Market" },
     { path: "/chat", icon: MessageCircle, label: "Chat", badge: unreadCount },
-    { path: "/profile", icon: User, label: "Profile" },
   ];
 
   return (
