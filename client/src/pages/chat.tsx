@@ -28,6 +28,8 @@ interface Chat {
   isActive: boolean;
   orderId?: string;
   gigId?: string;
+  serviceId?: string;
+  advertisementId?: string;
 }
 
 interface Message {
@@ -49,12 +51,34 @@ export default function Chat() {
 
   const { data: chats = [] } = useQuery({
     queryKey: ["/api/chats"],
+    refetchInterval: 3000, // Refresh every 3 seconds for real-time updates
   });
 
   const { data: messages = [] } = useQuery({
     queryKey: ["/api/chats", selectedChatId, "messages"],
     enabled: !!selectedChatId,
+    refetchInterval: 2000, // Refresh messages every 2 seconds
   });
+
+  // Helper functions
+  const getOtherParticipantInitial = (chat: Chat) => {
+    const otherParticipant = chat.participants.find(id => id !== user?.id);
+    return otherParticipant ? otherParticipant.charAt(0).toUpperCase() : '?';
+  };
+
+  const getChatTitle = (chat: Chat) => {
+    if (chat.serviceId) return 'Service Chat';
+    if (chat.gigId) return 'Gig Chat';
+    if (chat.advertisementId) return 'Marketplace Chat';
+    if (chat.orderId) return 'Order Chat';
+    return `Chat #${chat.id.slice(0, 8)}`;
+  };
+
+  const getChatSubtitle = (chat: Chat | null) => {
+    if (!chat) return '';
+    const otherParticipant = chat.participants.find(id => id !== user?.id);
+    return otherParticipant ? `with ${otherParticipant.slice(0, 8)}...` : 'No participants';
+  };
 
   const sendMessageMutation = useMutation({
     mutationFn: async (data: { chatId: string; content: string }) => {
@@ -166,12 +190,12 @@ export default function Chat() {
                     >
                       <div className="flex items-start space-x-3">
                         <div className="w-10 h-10 neon-gradient rounded-full flex items-center justify-center text-white font-medium">
-                          {chat.participants[0]?.[0] || '?'}
+                          {getOtherParticipantInitial(chat)}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
                             <p className="text-white font-medium truncate">
-                              Chat #{chat.id.slice(0, 8)}
+                              {getChatTitle(chat)}
                             </p>
                             <span className="text-gray-400 text-xs">
                               {chat.lastMessageAt ? formatTime(chat.lastMessageAt) : 'New'}
@@ -189,6 +213,16 @@ export default function Chat() {
                             {chat.gigId && (
                               <Badge variant="outline" className="text-xs bg-orange-500 bg-opacity-20 text-orange-400">
                                 Gig
+                              </Badge>
+                            )}
+                            {chat.serviceId && (
+                              <Badge variant="outline" className="text-xs bg-blue-500 bg-opacity-20 text-blue-400">
+                                Service
+                              </Badge>
+                            )}
+                            {chat.advertisementId && (
+                              <Badge variant="outline" className="text-xs bg-purple-500 bg-opacity-20 text-purple-400">
+                                Marketplace
                               </Badge>
                             )}
                           </div>
@@ -224,14 +258,14 @@ export default function Chat() {
                         <ArrowLeft className="w-4 h-4" />
                       </Button>
                       <div className="w-10 h-10 neon-gradient rounded-full flex items-center justify-center text-white font-medium">
-                        {selectedChat?.participants[0]?.[0] || '?'}
+                        {selectedChat ? getOtherParticipantInitial(selectedChat) : '?'}
                       </div>
                       <div>
                         <h3 className="text-white font-medium">
-                          Chat #{selectedChatId.slice(0, 8)}
+                          {selectedChat ? getChatTitle(selectedChat) : 'Chat'}
                         </h3>
                         <p className="text-gray-400 text-sm">
-                          {selectedChat?.participants.length || 0} participants
+                          {getChatSubtitle(selectedChat)}
                         </p>
                       </div>
                     </div>

@@ -461,11 +461,42 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(chats.id, messageData.chatId));
     
+    // Create notification for other participants
+    const chat = await db
+      .select()
+      .from(chats)
+      .where(eq(chats.id, messageData.chatId))
+      .limit(1);
+    
+    if (chat.length > 0) {
+      const otherParticipants = chat[0].participants.filter(id => id !== messageData.senderId);
+      for (const participantId of otherParticipants) {
+        await this.createNotification({
+          userId: participantId,
+          title: "New Message",
+          message: `You have a new message: "${messageData.content.substring(0, 50)}${messageData.content.length > 50 ? '...' : ''}"`,
+          type: "message",
+          relatedId: messageData.chatId,
+          isRead: false
+        });
+      }
+    }
+    
     return message;
   }
 
   async createChat(chatData: any): Promise<Chat> {
-    const [newChat] = await db.insert(chats).values(chatData).returning();
+    const [newChat] = await db
+      .insert(chats)
+      .values({
+        participants: chatData.participants,
+        orderId: chatData.orderId || null,
+        gigId: chatData.gigId || null,
+        serviceId: chatData.serviceId || null,
+        advertisementId: chatData.advertisementId || null,
+        isActive: chatData.isActive ?? true,
+      })
+      .returning();
     return newChat;
   }
 

@@ -879,13 +879,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/chats/start', isAuthenticated, async (req: any, res) => {
     try {
       const userId = getUserId(req);
-      const { receiverId, serviceId, gigId } = req.body;
+      const { receiverId, serviceId, gigId, advertisementId } = req.body;
       
-      // Check if chat already exists between these users for this service/gig
+      // Check if chat already exists between these users for this service/gig/ad
       const existingChats = await storage.getChatsByUser(userId);
       const existingChat = existingChats.find(chat => 
         chat.participants.includes(receiverId) && 
-        (serviceId ? chat.serviceId === serviceId : chat.gigId === gigId)
+        (serviceId ? chat.serviceId === serviceId : 
+         gigId ? chat.gigId === gigId : 
+         advertisementId ? chat.advertisementId === advertisementId : false)
       );
       
       if (existingChat) {
@@ -897,8 +899,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         participants: [userId, receiverId],
         serviceId: serviceId || null,
         gigId: gigId || null,
+        advertisementId: advertisementId || null,
         isActive: true,
       });
+      
+      // Send initial message based on context
+      let initialMessage = "";
+      if (serviceId) {
+        const service = await storage.getServiceById(serviceId);
+        initialMessage = `Hi! I'm interested in your service "${service?.title}". Can we discuss the details?`;
+      } else if (gigId) {
+        const gig = await storage.getGigById(gigId);
+        initialMessage = `Hi! I'm interested in your gig "${gig?.title}". Can we discuss this opportunity?`;
+      } else if (advertisementId) {
+        const ad = await storage.getAdvertisementById(advertisementId);
+        initialMessage = `Hi! I'm interested in your advertisement "${ad?.title}". Is this still available?`;
+      }
+      
+      if (initialMessage) {
+        await storage.createMessage({
+          chatId: newChat.id,
+          senderId: userId,
+          content: initialMessage
+        });
+      }
       
       res.status(201).json(newChat);
     } catch (error) {

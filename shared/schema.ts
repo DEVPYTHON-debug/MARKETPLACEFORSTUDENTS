@@ -145,6 +145,8 @@ export const chats = pgTable("chats", {
   id: uuid("id").primaryKey().defaultRandom(),
   orderId: uuid("order_id").references(() => orders.id),
   gigId: uuid("gig_id").references(() => gigs.id),
+  serviceId: uuid("service_id").references(() => services.id),
+  advertisementId: uuid("advertisement_id").references(() => advertisements.id),
   participants: text("participants").array().notNull(), // array of user IDs
   lastMessage: text("last_message"),
   lastMessageAt: timestamp("last_message_at"),

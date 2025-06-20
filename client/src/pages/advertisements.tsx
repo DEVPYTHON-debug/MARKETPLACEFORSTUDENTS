@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Heart, Share2, MessageCircle, Plus, Search } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -43,6 +43,7 @@ const categories = [
 export default function Advertisements() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -150,6 +151,54 @@ export default function Advertisements() {
 
   const handleShare = (adId: string) => {
     shareMutation.mutate(adId);
+  };
+
+  const startChatMutation = useMutation({
+    mutationFn: async (adOwnerId: string) => {
+      return apiRequest("POST", "/api/chats/start", {
+        receiverId: adOwnerId,
+        advertisementId: selectedAd?.id,
+      });
+    },
+    onSuccess: (chat) => {
+      setLocation("/chat");
+      toast({
+        title: "Chat Started",
+        description: "You can now message the advertisement owner.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Start Chat",
+        description: error.message || "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const [selectedAd, setSelectedAd] = useState<Advertisement | null>(null);
+
+  const handleStartChat = (ad: Advertisement) => {
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to start a chat.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (ad.userId === user.id) {
+      toast({
+        title: "Cannot Chat",
+        description: "You cannot chat with yourself.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setSelectedAd(ad);
+    startChatMutation.mutate(ad.userId);
   };
 
   if (isLoading) {
@@ -344,10 +393,11 @@ export default function Advertisements() {
                   <Button
                     size="sm"
                     variant="ghost"
+                    onClick={() => handleStartChat(ad)}
                     className="text-gray-400 hover:text-green-500 p-1"
                   >
                     <MessageCircle className="w-4 h-4" />
-                    <span className="ml-1 text-xs">{ad.comments}</span>
+                    <span className="ml-1 text-xs">Chat</span>
                   </Button>
                 </div>
               </div>
