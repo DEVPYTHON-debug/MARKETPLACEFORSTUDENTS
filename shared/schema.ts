@@ -359,6 +359,9 @@ export const insertGigSchema = createInsertSchema(gigs).omit({
 export const insertBidSchema = createInsertSchema(bids).omit({
   id: true,
   createdAt: true,
+}).extend({
+  amount: z.string().min(1, "Amount is required"),
+  proposal: z.string().min(10, "Proposal must be at least 10 characters"),
 });
 
 export const insertOrderSchema = createInsertSchema(orders).omit({

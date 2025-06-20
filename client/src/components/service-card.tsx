@@ -160,7 +160,9 @@ export default function ServiceCard({ service }: ServiceCardProps) {
               size="sm" 
               variant="outline" 
               className="flex-1 border-gray-700 hover:border-neon-blue"
+              onClick={handleStartChat}
             >
+              <MessageCircle className="w-4 h-4 mr-1" />
               Chat
             </Button>
           </div>

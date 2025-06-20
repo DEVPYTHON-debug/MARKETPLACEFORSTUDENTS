@@ -87,6 +87,7 @@ export interface IStorage {
   getChatsByUser(userId: string): Promise<Chat[]>;
   getMessagesByChat(chatId: string): Promise<Message[]>;
   createMessage(message: InsertMessage): Promise<Message>;
+  createChat(chatData: any): Promise<Chat>;
   
   // Notification operations
   getNotificationsByUser(userId: string): Promise<any[]>;

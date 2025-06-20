@@ -875,6 +875,194 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Chat functionality - Start new chat
+  app.post('/api/chats/start', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { receiverId, serviceId, gigId } = req.body;
+      
+      // Check if chat already exists between these users for this service/gig
+      const existingChats = await storage.getChatsByUser(userId);
+      const existingChat = existingChats.find(chat => 
+        chat.participants.includes(receiverId) && 
+        (serviceId ? chat.serviceId === serviceId : chat.gigId === gigId)
+      );
+      
+      if (existingChat) {
+        return res.json(existingChat);
+      }
+      
+      // Create new chat
+      const newChat = await storage.createChat({
+        participants: [userId, receiverId],
+        serviceId: serviceId || null,
+        gigId: gigId || null,
+        isActive: true,
+      });
+      
+      res.status(201).json(newChat);
+    } catch (error) {
+      console.error("Error starting chat:", error);
+      res.status(500).json({ message: "Failed to start chat" });
+    }
+  });
+
+  // Reviews routes
+  app.post('/api/reviews', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const reviewData = insertReviewSchema.parse({
+        ...req.body,
+        clientId: userId,
+      });
+      
+      const review = await storage.createReview(reviewData);
+      
+      // Update service rating
+      if (req.body.serviceId) {
+        const service = await storage.getServiceById(req.body.serviceId);
+        if (service) {
+          const reviews = await storage.getReviewsByUser(req.body.providerId);
+          const avgRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+          await storage.updateService(req.body.serviceId, {
+            rating: avgRating.toFixed(1),
+            reviewCount: reviews.length,
+          });
+        }
+      }
+      
+      res.status(201).json(review);
+    } catch (error: any) {
+      console.error("Error creating review:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ 
+          message: "Validation error", 
+          details: error.errors 
+        });
+      }
+      res.status(500).json({ message: "Failed to create review" });
+    }
+  });
+
+  // Advertisement routes
+  app.get('/api/advertisements', async (req, res) => {
+    try {
+      const { category, search, limit } = req.query;
+      const ads = await storage.getAdvertisements({
+        category: category as string,
+        search: search as string,
+        limit: limit ? parseInt(limit as string) : undefined,
+      });
+      res.json(ads);
+    } catch (error) {
+      console.error("Error fetching advertisements:", error);
+      res.status(500).json({ message: "Failed to fetch advertisements" });
+    }
+  });
+
+  app.get('/api/advertisements/:id', async (req, res) => {
+    try {
+      const ad = await storage.getAdvertisementById(req.params.id);
+      if (!ad) {
+        return res.status(404).json({ message: "Advertisement not found" });
+      }
+      res.json(ad);
+    } catch (error) {
+      console.error("Error fetching advertisement:", error);
+      res.status(500).json({ message: "Failed to fetch advertisement" });
+    }
+  });
+
+  app.post('/api/advertisements', isAuthenticated, upload.single('image'), async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const imageUrl = req.file ? getFileUrl(req.file.filename) : null;
+      
+      const adData = insertAdvertisementSchema.parse({
+        ...req.body,
+        userId,
+        imageUrl,
+      });
+      
+      const ad = await storage.createAdvertisement(adData);
+      res.status(201).json(ad);
+    } catch (error: any) {
+      console.error("Error creating advertisement:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ 
+          message: "Validation error", 
+          details: error.errors 
+        });
+      }
+      res.status(500).json({ message: "Failed to create advertisement" });
+    }
+  });
+
+  app.post('/api/advertisements/:id/like', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      await storage.likeAdvertisement(req.params.id, userId);
+      res.json({ message: "Advertisement liked" });
+    } catch (error) {
+      console.error("Error liking advertisement:", error);
+      res.status(500).json({ message: "Failed to like advertisement" });
+    }
+  });
+
+  app.delete('/api/advertisements/:id/like', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      await storage.unlikeAdvertisement(req.params.id, userId);
+      res.json({ message: "Advertisement unliked" });
+    } catch (error) {
+      console.error("Error unliking advertisement:", error);
+      res.status(500).json({ message: "Failed to unlike advertisement" });
+    }
+  });
+
+  app.post('/api/advertisements/:id/share', isAuthenticated, async (req: any, res) => {
+    try {
+      await storage.shareAdvertisement(req.params.id);
+      res.json({ message: "Advertisement shared" });
+    } catch (error) {
+      console.error("Error sharing advertisement:", error);
+      res.status(500).json({ message: "Failed to share advertisement" });
+    }
+  });
+
+  app.get('/api/advertisements/:id/comments', async (req, res) => {
+    try {
+      const comments = await storage.getAdComments(req.params.id);
+      res.json(comments);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      res.status(500).json({ message: "Failed to fetch comments" });
+    }
+  });
+
+  app.post('/api/advertisements/:id/comments', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const commentData = insertAdCommentSchema.parse({
+        ...req.body,
+        adId: req.params.id,
+        userId,
+      });
+      
+      const comment = await storage.createAdComment(commentData);
+      res.status(201).json(comment);
+    } catch (error: any) {
+      console.error("Error creating comment:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ 
+          message: "Validation error", 
+          details: error.errors 
+        });
+      }
+      res.status(500).json({ message: "Failed to create comment" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

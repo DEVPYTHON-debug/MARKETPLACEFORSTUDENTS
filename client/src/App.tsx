@@ -21,6 +21,7 @@ import Chat from "@/pages/chat";
 import Notifications from "@/pages/notifications";
 import KYC from "@/pages/kyc";
 import Advertisements from "@/pages/advertisements";
+import RateService from "@/pages/rate-service";
 import ManualLogin from "@/pages/manual-login";
 import NotFound from "@/pages/not-found";
 
@@ -71,6 +72,7 @@ function Router() {
       <Route path="/notifications" component={Notifications} />
       <Route path="/kyc" component={KYC} />
       <Route path="/advertisements" component={Advertisements} />
+      <Route path="/rate-service/:orderId" component={RateService} />
       <Route component={NotFound} />
     </Switch>
   );
