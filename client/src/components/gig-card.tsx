@@ -100,13 +100,13 @@ export default function GigCard({ gig, showBidButton = false, isOwner = false }:
             
             {(showBidButton || isOwner) && (
               <div className="flex items-center space-x-2 mt-4">
-                {showBidButton && (
+                {showBidButton && !isGigOwner && (
                   <Button size="sm" className="neon-gradient flex-1">
                     Place Bid
                   </Button>
                 )}
                 
-                {isOwner && (
+                {(isOwner || isGigOwner) && (
                   <Button size="sm" variant="outline" className="border-gray-700 hover:border-neon-blue">
                     <MessageCircle className="w-4 h-4 mr-1" />
                     Manage

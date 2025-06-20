@@ -9,6 +9,14 @@ import {
 } from "lucide-react";
 
 export default function BottomNav() {
+  const { user } = useAuth();
+
+  const { data: notifications = [] } = useQuery({
+    queryKey: ["/api/notifications"],
+    enabled: !!user,
+  });
+
+  const unreadCount = notifications.filter((n: any) => !n.isRead).length;
   const [location, setLocation] = useLocation();
 
   const navItems = [

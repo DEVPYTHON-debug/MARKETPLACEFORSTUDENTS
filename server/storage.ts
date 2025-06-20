@@ -32,6 +32,7 @@ import { eq, desc, sql, and, or, ilike, gte, lte } from "drizzle-orm";
 export interface IStorage {
   // User operations (mandatory for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<UpsertUser>): Promise<User>;
   
@@ -73,6 +74,18 @@ export interface IStorage {
   getChatsByUser(userId: string): Promise<Chat[]>;
   getMessagesByChat(chatId: string): Promise<Message[]>;
   createMessage(message: InsertMessage): Promise<Message>;
+  
+  // Notification operations
+  getNotificationsByUser(userId: string): Promise<any[]>;
+  createNotification(notification: any): Promise<any>;
+  markNotificationAsRead(notificationId: string): Promise<void>;
+  markAllNotificationsAsRead(userId: string): Promise<void>;
+  
+  // KYC operations
+  getKycData(userId: string): Promise<any>;
+  submitKyc(userId: string, kycData: any): Promise<any>;
+  getVirtualAccount(userId: string): Promise<any>;
+  generateVirtualAccount(userId: string): Promise<any>;
   
   // Analytics
   getUserStats(userId: string): Promise<{

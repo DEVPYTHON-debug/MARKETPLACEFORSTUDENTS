@@ -67,10 +67,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const imageUrl = req.file ? getFileUrl(req.file.filename) : null;
       
+      // Parse tags if it's a JSON string
+      let tags = [];
+      if (req.body.tags) {
+        try {
+          tags = typeof req.body.tags === 'string' ? JSON.parse(req.body.tags) : req.body.tags;
+        } catch (e) {
+          tags = [];
+        }
+      }
+      
       const serviceData = insertServiceSchema.parse({
         ...req.body,
         providerId: userId,
         imageUrl,
+        tags,
       });
       const service = await storage.createService(serviceData);
       res.status(201).json(service);

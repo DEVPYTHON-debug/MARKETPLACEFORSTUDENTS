@@ -40,6 +40,22 @@ export const users = pgTable("users", {
   rating: decimal("rating", { precision: 3, scale: 2 }).default("0.00"),
   completedOrders: integer("completed_orders").default(0),
   totalEarnings: decimal("total_earnings", { precision: 10, scale: 2 }).default("0.00"),
+  
+  // KYC Fields
+  isKycVerified: boolean("is_kyc_verified").default(false),
+  bvn: varchar("bvn"),
+  nin: varchar("nin"),
+  ninImageUrl: varchar("nin_image_url"),
+  selfieImageUrl: varchar("selfie_image_url"),
+  kycStatus: varchar("kyc_status").default("pending"), // pending, approved, rejected
+  
+  // Virtual Account
+  virtualAccountNumber: varchar("virtual_account_number"),
+  virtualAccountBank: varchar("virtual_account_bank"),
+  
+  // Manual authentication
+  password: varchar("password"), // For manual login users
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -141,6 +157,19 @@ export const messages = pgTable("messages", {
   chatId: uuid("chat_id").notNull().references(() => chats.id),
   senderId: varchar("sender_id").notNull().references(() => users.id),
   content: text("content").notNull(),
+  isRead: boolean("is_read").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Notifications table
+export const notifications = pgTable("notifications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  title: varchar("title").notNull(),
+  message: text("message").notNull(),
+  type: varchar("type").notNull(), // bid_received, order_update, payment, etc.
+  isRead: boolean("is_read").default(false),
+  relatedId: varchar("related_id"), // gig_id, order_id, etc.
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -153,6 +182,14 @@ export const usersRelations = relations(users, ({ many }) => ({
   providerOrders: many(orders, { relationName: "providerOrders" }),
   reviews: many(reviews),
   transactions: many(transactions),
+  notifications: many(notifications),
+}));
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, {
+    fields: [notifications.userId],
+    references: [users.id],
+  }),
 }));
 
 export const servicesRelations = relations(services, ({ one, many }) => ({

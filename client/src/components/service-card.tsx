@@ -23,6 +23,10 @@ interface ServiceCardProps {
 }
 
 export default function ServiceCard({ service }: ServiceCardProps) {
+  const { user } = useAuth();
+  
+  // Check if the current user is the provider of this service
+  const isServiceProvider = user?.id === service.provider?.id;
   const mockImages = [
     "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200",
     "https://images.unsplash.com/photo-1581092160562-40aa08e78837?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200",

@@ -118,7 +118,20 @@ The application uses a comprehensive schema supporting:
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+✓ Fixed service creation validation error (tags field)
+✓ Added comprehensive notification system with real-time counters
+✓ Implemented KYC verification system with document upload
+✓ Added virtual account generation functionality
+✓ Created splash screen with manual and Replit authentication options
+✓ Fixed bidding restrictions (owners cannot bid on their own gigs)
+✓ Fixed booking restrictions (providers cannot book their own services)
+✓ Enhanced navigation with notification badges and user profile images
+✓ Added manual authentication system with role-based registration
+✓ Updated database schema with new tables and columns
+
 ## Changelog
 
-Changelog:
-- June 20, 2025. Initial setup
+- June 20, 2025: Initial setup
+- June 20, 2025: Comprehensive fixes implemented - validation, notifications, KYC, authentication, UI improvements
