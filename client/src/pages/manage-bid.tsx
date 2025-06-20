@@ -38,11 +38,7 @@ export default function ManageBid() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: typeof editData) => {
-      return apiRequest(`/api/bids/${bidId}`, {
-        method: "PATCH",
-        body: JSON.stringify(data),
-        headers: { "Content-Type": "application/json" },
-      });
+      return apiRequest("PATCH", `/api/bids/${bidId}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/bids"] });
@@ -56,7 +52,7 @@ export default function ManageBid() {
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest(`/api/bids/${bidId}`, { method: "DELETE" });
+      return apiRequest("DELETE", `/api/bids/${bidId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/bids"] });

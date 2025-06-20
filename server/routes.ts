@@ -330,6 +330,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/bids/:id', isAuthenticated, async (req, res) => {
+    try {
+      const bid = await storage.getBidById(req.params.id);
+      if (!bid) {
+        return res.status(404).json({ message: "Bid not found" });
+      }
+      res.json(bid);
+    } catch (error) {
+      console.error("Error fetching bid:", error);
+      res.status(500).json({ message: "Failed to fetch bid" });
+    }
+  });
+
+  app.patch('/api/bids/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const bidId = req.params.id;
+      
+      // Check if the user owns this bid
+      const existingBid = await storage.getBidById(bidId);
+      if (!existingBid || existingBid.bidderId !== userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      const bid = await storage.updateBid(bidId, req.body);
+      res.json(bid);
+    } catch (error: any) {
+      console.error("Error updating bid:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ 
+          message: "Validation error", 
+          details: error.errors 
+        });
+      }
+      res.status(500).json({ message: "Failed to update bid" });
+    }
+  });
+
+  app.delete('/api/bids/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const bidId = req.params.id;
+      
+      // Check if the user owns this bid
+      const existingBid = await storage.getBidById(bidId);
+      if (!existingBid || existingBid.bidderId !== userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      await storage.deleteBid(bidId);
+      res.json({ message: "Bid deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting bid:", error);
+      res.status(500).json({ message: "Failed to delete bid" });
+    }
+  });
+
   // Order routes
   app.get('/api/orders', isAuthenticated, async (req: any, res) => {
     try {

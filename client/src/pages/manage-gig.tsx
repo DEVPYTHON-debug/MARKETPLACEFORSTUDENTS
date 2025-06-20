@@ -53,11 +53,7 @@ export default function ManageGig() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: typeof editData) => {
-      return apiRequest(`/api/gigs/${gigId}`, {
-        method: "PATCH",
-        body: JSON.stringify(data),
-        headers: { "Content-Type": "application/json" },
-      });
+      return apiRequest("PATCH", `/api/gigs/${gigId}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
@@ -71,7 +67,7 @@ export default function ManageGig() {
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest(`/api/gigs/${gigId}`, { method: "DELETE" });
+      return apiRequest("DELETE", `/api/gigs/${gigId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });

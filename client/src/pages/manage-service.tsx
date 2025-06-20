@@ -42,11 +42,7 @@ export default function ManageService() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: typeof editData) => {
-      return apiRequest(`/api/services/${serviceId}`, {
-        method: "PATCH",
-        body: JSON.stringify(data),
-        headers: { "Content-Type": "application/json" },
-      });
+      return apiRequest("PATCH", `/api/services/${serviceId}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/services"] });
@@ -60,7 +56,7 @@ export default function ManageService() {
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest(`/api/services/${serviceId}`, { method: "DELETE" });
+      return apiRequest("DELETE", `/api/services/${serviceId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/services"] });
