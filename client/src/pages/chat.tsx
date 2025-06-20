@@ -69,8 +69,16 @@ export default function Chat() {
     refetchInterval: 3000, // Refresh every 3 seconds for real-time updates
   });
 
-  const { data: messages = [] } = useQuery<Message[]>({
+  const { data: messages = [], isLoading: messagesLoading } = useQuery<Message[]>({
     queryKey: ["/api/chats", selectedChatId, "messages"],
+    queryFn: async () => {
+      if (!selectedChatId) return [];
+      const response = await fetch(`/api/chats/${selectedChatId}/messages`, {
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to fetch messages');
+      return response.json();
+    },
     enabled: !!selectedChatId,
     refetchInterval: 2000, // Refresh messages every 2 seconds
   });
@@ -143,7 +151,9 @@ export default function Chat() {
       setMessageInput("");
       setSelectedFile(null);
       setShowAttachmentMenu(false);
+      // Force immediate refresh of messages
       queryClient.invalidateQueries({ queryKey: ["/api/chats", selectedChatId, "messages"] });
+      queryClient.refetchQueries({ queryKey: ["/api/chats", selectedChatId, "messages"] });
       queryClient.invalidateQueries({ queryKey: ["/api/chats"] });
     },
     onError: (error: any) => {
@@ -377,7 +387,11 @@ export default function Chat() {
 
                 {/* Messages */}
                 <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
-                  {messages.length > 0 ? (
+                  {messagesLoading ? (
+                    <div className="flex justify-center items-center h-32">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-neon-blue"></div>
+                    </div>
+                  ) : messages && messages.length > 0 ? (
                     messages.map((message: Message) => {
                       const isOwnMessage = message.senderId === user?.id;
                       const otherParticipant = selectedChat ? getOtherParticipant(selectedChat) : null;
