@@ -26,8 +26,20 @@ import NotFound from "@/pages/not-found";
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
 
+  // Only show loading briefly on initial page load
   if (isLoading) {
-    return <Splash />;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-dark-bg via-gray-900 to-dark-bg flex items-center justify-center">
+        <div className="text-center space-y-6">
+          <div className="relative">
+            <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-r from-neon-blue to-neon-orange animate-pulse"></div>
+          </div>
+          <h1 className="text-4xl font-bold neon-gradient-text">
+            Si-link
+          </h1>
+        </div>
+      </div>
+    );
   }
 
   if (!isAuthenticated) {

@@ -25,11 +25,12 @@ export default function Splash() {
   }, [isAuthenticated, isLoading, setLocation]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsAnimating(false), 2000);
+    const timer = setTimeout(() => setIsAnimating(false), 1000);
     return () => clearTimeout(timer);
   }, []);
 
-  if (isLoading || (isAuthenticated && isAnimating)) {
+  // Show loading only briefly on initial load when still checking auth
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-dark-bg via-gray-900 to-dark-bg flex items-center justify-center">
         <div className="text-center space-y-6">
