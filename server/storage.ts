@@ -587,7 +587,7 @@ export class DatabaseStorage implements IStorage {
 
   // Advertisement operations
   async getAdvertisements(filters?: { category?: string; search?: string; limit?: number }): Promise<Advertisement[]> {
-    let query = this.db.select().from(advertisements);
+    let query = db.select().from(advertisements);
     
     if (filters?.category) {
       query = query.where(eq(advertisements.category, filters.category));
