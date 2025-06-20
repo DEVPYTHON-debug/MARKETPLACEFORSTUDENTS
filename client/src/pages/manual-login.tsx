@@ -36,11 +36,7 @@ export default function ManualLogin() {
 
   const loginMutation = useMutation({
     mutationFn: async (data: { email: string; password: string }) => {
-      return apiRequest("/api/auth/manual-login", {
-        method: "POST",
-        body: JSON.stringify(data),
-        headers: { "Content-Type": "application/json" },
-      });
+      return apiRequest("POST", "/api/auth/manual-login", data);
     },
     onSuccess: () => {
       toast({
@@ -66,11 +62,7 @@ export default function ManualLogin() {
       lastName: string;
       role: string;
     }) => {
-      return apiRequest("/api/auth/manual-register", {
-        method: "POST",
-        body: JSON.stringify(data),
-        headers: { "Content-Type": "application/json" },
-      });
+      return apiRequest("POST", "/api/auth/manual-register", data);
     },
     onSuccess: () => {
       toast({

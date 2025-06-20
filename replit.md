@@ -137,6 +137,10 @@ Preferred communication style: Simple, everyday language.
 ✓ Added individual API endpoints for services, gigs, and bids
 ✓ Fixed API request parameter order in management pages
 ✓ Added PATCH and DELETE endpoints for complete CRUD operations
+✓ Resolved infinite authentication requests issue
+✓ Fixed logged-out users getting stuck on splash screen
+✓ Fixed manual registration and login API calls
+✓ Improved authentication flow with proper 401 handling
 
 ## Changelog
 
