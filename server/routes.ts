@@ -262,6 +262,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update user profile
+  app.put('/api/user/profile', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { firstName, lastName, role } = req.body;
+      
+      const updatedUser = await storage.updateUser(userId, {
+        firstName,
+        lastName,
+        role
+      });
+      
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      res.status(500).json({ message: "Failed to update profile" });
+    }
+  });
+
+  // Add money to wallet
+  app.post('/api/wallet/add-money', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { amount, description = "Wallet top-up" } = req.body;
+      
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ message: "Invalid amount" });
+      }
+      
+      // Create credit transaction
+      const transaction = await storage.createTransaction({
+        userId,
+        type: "deposit",
+        amount: amount.toString(),
+        description,
+        status: "completed"
+      });
+      
+      res.json({ 
+        success: true, 
+        transaction,
+        message: "Money added successfully" 
+      });
+    } catch (error) {
+      console.error("Error adding money:", error);
+      res.status(500).json({ message: "Failed to add money" });
+    }
+  });
+
+  // Withdraw money from wallet
+  app.post('/api/wallet/withdraw', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { amount, description = "Wallet withdrawal" } = req.body;
+      
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ message: "Invalid amount" });
+      }
+      
+      const user = await storage.getUser(userId);
+      const currentBalance = parseFloat(user?.walletBalance || '0');
+      
+      if (currentBalance < amount) {
+        return res.status(400).json({ message: "Insufficient balance" });
+      }
+      
+      // Create debit transaction
+      const transaction = await storage.createTransaction({
+        userId,
+        type: "withdrawal",
+        amount: amount.toString(),
+        description,
+        status: "completed"
+      });
+      
+      res.json({ 
+        success: true, 
+        transaction,
+        message: "Money withdrawn successfully" 
+      });
+    } catch (error) {
+      console.error("Error withdrawing money:", error);
+      res.status(500).json({ message: "Failed to withdraw money" });
+    }
+  });
+
   // Chat routes
   app.get('/api/chats', isAuthenticated, async (req: any, res) => {
     try {

@@ -56,7 +56,10 @@ export default function Gigs() {
               Find gigs or post your own services
             </p>
           </div>
-          <Button className="neon-gradient hover:shadow-neon-blue transition-all">
+          <Button 
+            className="neon-gradient hover:shadow-neon-blue transition-all"
+            onClick={() => window.location.href = "/create-gig"}
+          >
             <Plus className="w-4 h-4 mr-2" />
             Post Gig
           </Button>
@@ -138,7 +141,10 @@ export default function Gigs() {
                   <p className="text-gray-400 mb-6">
                     Be the first to post a gig!
                   </p>
-                  <Button className="neon-gradient">
+                  <Button 
+                    className="neon-gradient"
+                    onClick={() => window.location.href = "/create-gig"}
+                  >
                     <Plus className="w-4 h-4 mr-2" />
                     Post First Gig
                   </Button>
@@ -165,7 +171,10 @@ export default function Gigs() {
                   <p className="text-gray-400 mb-6">
                     Start earning by posting your first gig!
                   </p>
-                  <Button className="neon-gradient">
+                  <Button 
+                    className="neon-gradient"
+                    onClick={() => window.location.href = "/create-gig"}
+                  >
                     <Plus className="w-4 h-4 mr-2" />
                     Create Your First Gig
                   </Button>

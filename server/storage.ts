@@ -30,6 +30,7 @@ export interface IStorage {
   // User operations (mandatory for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  updateUser(id: string, updates: Partial<UpsertUser>): Promise<User>;
   
   // Service operations
   getServices(filters?: { category?: string; search?: string; limit?: number }): Promise<Service[]>;
@@ -99,30 +100,40 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async updateUser(id: string, updates: Partial<UpsertUser>): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
   // Service operations
   async getServices(filters?: { category?: string; search?: string; limit?: number }): Promise<Service[]> {
-    let query = db.select().from(services).where(eq(services.isActive, true));
+    let whereConditions = [eq(services.isActive, true)];
     
     if (filters?.category) {
-      query = query.where(eq(services.category, filters.category));
+      whereConditions.push(eq(services.category, filters.category));
     }
     
     if (filters?.search) {
-      query = query.where(
+      whereConditions.push(
         or(
           ilike(services.title, `%${filters.search}%`),
           ilike(services.description, `%${filters.search}%`)
-        )
+        )!
       );
     }
     
-    query = query.orderBy(desc(services.rating), desc(services.createdAt));
+    let baseQuery = db.select().from(services).where(and(...whereConditions))
+      .orderBy(desc(services.rating), desc(services.createdAt));
     
     if (filters?.limit) {
-      query = query.limit(filters.limit);
+      return await baseQuery.limit(filters.limit);
     }
     
-    return await query;
+    return await baseQuery;
   }
 
   async getServiceById(id: string): Promise<Service | undefined> {
@@ -157,32 +168,33 @@ export class DatabaseStorage implements IStorage {
 
   // Gig operations
   async getGigs(filters?: { category?: string; search?: string; status?: string; limit?: number }): Promise<Gig[]> {
-    let query = db.select().from(gigs).where(eq(gigs.isActive, true));
+    let whereConditions = [eq(gigs.isActive, true)];
     
     if (filters?.category) {
-      query = query.where(eq(gigs.category, filters.category));
+      whereConditions.push(eq(gigs.category, filters.category));
     }
     
     if (filters?.search) {
-      query = query.where(
+      whereConditions.push(
         or(
           ilike(gigs.title, `%${filters.search}%`),
           ilike(gigs.description, `%${filters.search}%`)
-        )
+        )!
       );
     }
     
     if (filters?.status) {
-      query = query.where(eq(gigs.status, filters.status));
+      whereConditions.push(eq(gigs.status, filters.status));
     }
     
-    query = query.orderBy(desc(gigs.createdAt));
+    let baseQuery = db.select().from(gigs).where(and(...whereConditions))
+      .orderBy(desc(gigs.createdAt));
     
     if (filters?.limit) {
-      query = query.limit(filters.limit);
+      return await baseQuery.limit(filters.limit);
     }
     
-    return await query;
+    return await baseQuery;
   }
 
   async getGigById(id: string): Promise<Gig | undefined> {

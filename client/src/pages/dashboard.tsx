@@ -218,7 +218,10 @@ export default function Dashboard() {
                 </div>
               </div>
               
-              <Button className="w-full neon-gradient hover:shadow-neon-orange transition-all">
+              <Button 
+                className="w-full neon-gradient hover:shadow-neon-orange transition-all"
+                onClick={() => window.location.href = "/edit-profile"}
+              >
                 Edit Profile
               </Button>
             </CardContent>
@@ -245,7 +248,10 @@ export default function Dashboard() {
               </div>
               
               <div className="grid grid-cols-2 gap-3">
-                <Button className="bg-green-600 hover:bg-green-700 transition-colors">
+                <Button 
+                  className="bg-green-600 hover:bg-green-700 transition-colors"
+                  onClick={() => window.location.href = "/add-money"}
+                >
                   Add Money
                 </Button>
                 <Button variant="secondary" className="bg-gray-700 hover:bg-gray-600">
@@ -260,7 +266,10 @@ export default function Dashboard() {
         <section>
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-2xl font-bold text-white">Active Gigs</h3>
-            <Button className="neon-gradient hover:shadow-neon-blue transition-all">
+            <Button 
+              className="neon-gradient hover:shadow-neon-blue transition-all"
+              onClick={() => window.location.href = "/create-gig"}
+            >
               <Plus className="w-4 h-4 mr-2" />
               Post New Gig
             </Button>
@@ -277,7 +286,10 @@ export default function Dashboard() {
                   <Briefcase className="w-16 h-16 text-gray-600 mx-auto mb-4" />
                   <p className="text-gray-400 text-lg">No active gigs</p>
                   <p className="text-gray-500 text-sm mb-4">Start earning by posting your first gig!</p>
-                  <Button className="neon-gradient">
+                  <Button 
+                    className="neon-gradient"
+                    onClick={() => window.location.href = "/create-gig"}
+                  >
                     <Plus className="w-4 h-4 mr-2" />
                     Create Your First Gig
                   </Button>

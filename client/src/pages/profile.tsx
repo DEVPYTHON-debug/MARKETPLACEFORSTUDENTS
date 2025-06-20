@@ -94,7 +94,11 @@ export default function Profile() {
                   <span>{user?.email}</span>
                 </div>
               </div>
-              <Button size="sm" className="neon-gradient">
+              <Button 
+                size="sm" 
+                className="neon-gradient"
+                onClick={() => window.location.href = "/edit-profile"}
+              >
                 <Edit3 className="w-4 h-4 mr-2" />
                 Edit
               </Button>
@@ -226,7 +230,10 @@ export default function Profile() {
                 <p className="text-gray-400 mb-6">
                   Create your first service to start earning
                 </p>
-                <Button className="neon-gradient">
+                <Button 
+                  className="neon-gradient"
+                  onClick={() => window.location.href = "/create-service"}
+                >
                   Create Service
                 </Button>
               </CardContent>
@@ -244,7 +251,10 @@ export default function Profile() {
                 <p className="text-gray-400 mb-6">
                   Complete your first order to receive reviews
                 </p>
-                <Button className="neon-gradient">
+                <Button 
+                  className="neon-gradient"
+                  onClick={() => window.location.href = "/services"}
+                >
                   Browse Services
                 </Button>
               </CardContent>

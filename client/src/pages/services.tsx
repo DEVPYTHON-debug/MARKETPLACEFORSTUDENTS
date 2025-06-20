@@ -128,7 +128,10 @@ export default function Services() {
                   ? "Try adjusting your search or filters"
                   : "Be the first to create a service!"}
               </p>
-              <Button className="neon-gradient">
+              <Button 
+                className="neon-gradient"
+                onClick={() => window.location.href = "/create-service"}
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 Create Service
               </Button>
