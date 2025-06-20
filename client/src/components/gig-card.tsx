@@ -113,7 +113,12 @@ export default function GigCard({ gig, showBidButton = false, isOwner = false }:
                 )}
                 
                 {(isOwner || isGigOwner) && (
-                  <Button size="sm" variant="outline" className="border-gray-700 hover:border-neon-blue">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="border-gray-700 hover:border-neon-blue"
+                    onClick={() => window.location.href = `/manage-gig/${gig.id}`}
+                  >
                     <MessageCircle className="w-4 h-4 mr-1" />
                     Manage
                   </Button>

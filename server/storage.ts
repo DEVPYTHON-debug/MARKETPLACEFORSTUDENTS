@@ -28,7 +28,7 @@ import {
   type InsertMessage,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, sql, and, or, ilike, gte, lte } from "drizzle-orm";
+import { eq, desc, sql, and, or, ilike, gte, lte, ne } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (mandatory for Replit Auth)
@@ -49,13 +49,17 @@ export interface IStorage {
   getGigById(id: string): Promise<Gig | undefined>;
   createGig(gig: InsertGig): Promise<Gig>;
   updateGig(id: string, updates: Partial<InsertGig>): Promise<Gig>;
+  deleteGig(id: string): Promise<void>;
   getGigsByClient(clientId: string): Promise<Gig[]>;
   
   // Bid operations
   getBidsByGig(gigId: string): Promise<Bid[]>;
   getBidsByBidder(bidderId: string): Promise<Bid[]>;
+  getBidById(id: string): Promise<Bid | undefined>;
   createBid(bid: InsertBid): Promise<Bid>;
   updateBid(id: string, updates: Partial<InsertBid>): Promise<Bid>;
+  deleteBid(id: string): Promise<void>;
+  acceptBid(id: string): Promise<void>;
   
   // Order operations
   getOrdersByUser(userId: string): Promise<Order[]>;
@@ -236,6 +240,13 @@ export class DatabaseStorage implements IStorage {
       .where(eq(gigs.id, id))
       .returning();
     return gig;
+  }
+
+  async deleteGig(id: string): Promise<void> {
+    // Delete associated bids first
+    await db.delete(bids).where(eq(bids.gigId, id));
+    // Delete the gig
+    await db.delete(gigs).where(eq(gigs.id, id));
   }
 
   async getGigsByClient(clientId: string): Promise<Gig[]> {
