@@ -54,7 +54,7 @@ export default function ServiceCard({ service }: ServiceCardProps) {
         title: "Service Booked!",
         description: "Your service has been booked successfully. Check your orders for details.",
       });
-      setLocation("/dashboard");
+      setLocation("/");
     },
     onError: (error: any) => {
       toast({
