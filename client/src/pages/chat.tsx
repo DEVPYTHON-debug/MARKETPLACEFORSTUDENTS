@@ -23,6 +23,13 @@ import {
 interface Chat {
   id: string;
   participants: string[];
+  participantDetails?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    profileImage?: string;
+    isVerified: boolean;
+  }[];
   lastMessage: string;
   lastMessageAt: string;
   isActive: boolean;
@@ -49,24 +56,40 @@ export default function Chat() {
   const [searchQuery, setSearchQuery] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const { data: chats = [] } = useQuery({
+  const { data: chats = [] } = useQuery<Chat[]>({
     queryKey: ["/api/chats"],
     refetchInterval: 3000, // Refresh every 3 seconds for real-time updates
   });
 
-  const { data: messages = [] } = useQuery({
+  const { data: messages = [] } = useQuery<Message[]>({
     queryKey: ["/api/chats", selectedChatId, "messages"],
     enabled: !!selectedChatId,
     refetchInterval: 2000, // Refresh messages every 2 seconds
   });
 
   // Helper functions
+  const getOtherParticipant = (chat: Chat) => {
+    if (!chat.participantDetails) {
+      return null;
+    }
+    return chat.participantDetails.find(participant => participant.id !== user?.id);
+  };
+
   const getOtherParticipantInitial = (chat: Chat) => {
-    const otherParticipant = chat.participants.find(id => id !== user?.id);
-    return otherParticipant ? otherParticipant.charAt(0).toUpperCase() : '?';
+    const otherParticipant = getOtherParticipant(chat);
+    if (otherParticipant) {
+      return `${otherParticipant.firstName?.charAt(0) || ''}${otherParticipant.lastName?.charAt(0) || ''}`.toUpperCase() || '?';
+    }
+    const fallbackId = chat.participants.find(id => id !== user?.id);
+    return fallbackId ? fallbackId.charAt(0).toUpperCase() : '?';
   };
 
   const getChatTitle = (chat: Chat) => {
+    const otherParticipant = getOtherParticipant(chat);
+    if (otherParticipant) {
+      return `${otherParticipant.firstName || 'Unknown'} ${otherParticipant.lastName || 'User'}`;
+    }
+    
     if (chat.serviceId) return 'Service Chat';
     if (chat.gigId) return 'Gig Chat';
     if (chat.advertisementId) return 'Marketplace Chat';
@@ -76,8 +99,12 @@ export default function Chat() {
 
   const getChatSubtitle = (chat: Chat | null) => {
     if (!chat) return '';
-    const otherParticipant = chat.participants.find(id => id !== user?.id);
-    return otherParticipant ? `with ${otherParticipant.slice(0, 8)}...` : 'No participants';
+    
+    if (chat.serviceId) return 'Service Discussion';
+    if (chat.gigId) return 'Gig Discussion';
+    if (chat.advertisementId) return 'Marketplace Chat';
+    if (chat.orderId) return 'Order Chat';
+    return 'Direct Message';
   };
 
   const sendMessageMutation = useMutation({
@@ -121,7 +148,7 @@ export default function Chat() {
     chat.lastMessage?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const selectedChat = chats.find((chat: Chat) => chat.id === selectedChatId);
+  const selectedChat = chats.find((chat: Chat) => chat.id === selectedChatId) || null;
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -151,7 +178,7 @@ export default function Chat() {
       <main className="container mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-12rem)]">
           {/* Chat List */}
-          <div className="lg:col-span-1">
+          <div className={`lg:col-span-1 ${selectedChatId ? 'hidden lg:block' : 'block'}`}>
             <Card className="bg-card-bg border-gray-800 h-full flex flex-col">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
@@ -189,8 +216,18 @@ export default function Chat() {
                       }`}
                     >
                       <div className="flex items-start space-x-3">
-                        <div className="w-10 h-10 neon-gradient rounded-full flex items-center justify-center text-white font-medium">
-                          {getOtherParticipantInitial(chat)}
+                        <div className="w-10 h-10 rounded-full overflow-hidden">
+                          {getOtherParticipant(chat)?.profileImage ? (
+                            <img 
+                              src={getOtherParticipant(chat)?.profileImage} 
+                              alt={getChatTitle(chat)}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full neon-gradient flex items-center justify-center text-white font-medium">
+                              {getOtherParticipantInitial(chat)}
+                            </div>
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
@@ -242,7 +279,7 @@ export default function Chat() {
           </div>
 
           {/* Chat Messages */}
-          <div className="lg:col-span-2">
+          <div className={`lg:col-span-2 ${selectedChatId ? 'block' : 'hidden lg:block'}`}>
             {selectedChatId ? (
               <Card className="bg-card-bg border-gray-800 h-full flex flex-col">
                 {/* Chat Header */}
@@ -257,8 +294,18 @@ export default function Chat() {
                       >
                         <ArrowLeft className="w-4 h-4" />
                       </Button>
-                      <div className="w-10 h-10 neon-gradient rounded-full flex items-center justify-center text-white font-medium">
-                        {selectedChat ? getOtherParticipantInitial(selectedChat) : '?'}
+                      <div className="w-10 h-10 rounded-full overflow-hidden">
+                        {selectedChat && getOtherParticipant(selectedChat)?.profileImage ? (
+                          <img 
+                            src={getOtherParticipant(selectedChat)?.profileImage} 
+                            alt={getChatTitle(selectedChat)}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full neon-gradient flex items-center justify-center text-white font-medium">
+                            {selectedChat ? getOtherParticipantInitial(selectedChat) : '?'}
+                          </div>
+                        )}
                       </div>
                       <div>
                         <h3 className="text-white font-medium">
@@ -313,10 +360,19 @@ export default function Chat() {
                     })
                   ) : (
                     <div className="flex-1 flex items-center justify-center">
-                      <div className="text-center">
+                      <div className="text-center max-w-md">
                         <MessageCircle className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                        <p className="text-gray-400">No messages yet</p>
-                        <p className="text-gray-500 text-sm">Start the conversation!</p>
+                        <p className="text-gray-400 mb-2">No messages yet</p>
+                        <p className="text-gray-500 text-sm mb-4">Start the conversation with {selectedChat ? getChatTitle(selectedChat) : 'this user'}!</p>
+                        <div className="bg-gray-800 rounded-lg p-4 text-left">
+                          <p className="text-gray-300 text-sm mb-2">💡 Chat Tips:</p>
+                          <ul className="text-gray-400 text-xs space-y-1">
+                            <li>• Be clear about your requirements</li>
+                            <li>• Ask about pricing and timeline</li>
+                            <li>• Share relevant details about your project</li>
+                            <li>• Keep communication professional</li>
+                          </ul>
+                        </div>
                       </div>
                     </div>
                   )}

@@ -332,6 +332,22 @@ export class DatabaseStorage implements IStorage {
     return bid;
   }
 
+  async getBidById(id: string): Promise<Bid | undefined> {
+    const [bid] = await db.select().from(bids).where(eq(bids.id, id));
+    return bid;
+  }
+
+  async deleteBid(id: string): Promise<void> {
+    await db.delete(bids).where(eq(bids.id, id));
+  }
+
+  async acceptBid(id: string): Promise<void> {
+    await db
+      .update(bids)
+      .set({ status: 'accepted' })
+      .where(eq(bids.id, id));
+  }
+
   // Order operations
   async getOrdersByUser(userId: string): Promise<Order[]> {
     return await db
@@ -431,11 +447,47 @@ export class DatabaseStorage implements IStorage {
 
   // Chat operations
   async getChatsByUser(userId: string): Promise<Chat[]> {
-    return await db
-      .select()
+    const chatData = await db
+      .select({
+        id: chats.id,
+        participants: chats.participants,
+        lastMessage: chats.lastMessage,
+        lastMessageAt: chats.lastMessageAt,
+        isActive: chats.isActive,
+        orderId: chats.orderId,
+        gigId: chats.gigId,
+        serviceId: chats.serviceId,
+        advertisementId: chats.advertisementId,
+        createdAt: chats.createdAt,
+      })
       .from(chats)
       .where(sql`${userId} = ANY(${chats.participants})`)
       .orderBy(desc(chats.lastMessageAt));
+
+    // Enrich with participant details
+    const enrichedChats = await Promise.all(
+      chatData.map(async (chat) => {
+        const participantDetails = await Promise.all(
+          chat.participants.map(async (participantId) => {
+            const user = await this.getUser(participantId);
+            return {
+              id: participantId,
+              firstName: user?.firstName || 'Unknown',
+              lastName: user?.lastName || 'User',
+              profileImage: user?.profileImageUrl || null,
+              isVerified: user?.isVerified || false,
+            };
+          })
+        );
+
+        return {
+          ...chat,
+          participantDetails,
+        };
+      })
+    );
+
+    return enrichedChats;
   }
 
   async getMessagesByChat(chatId: string): Promise<Message[]> {
