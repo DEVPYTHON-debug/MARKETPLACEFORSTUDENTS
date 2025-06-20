@@ -9,6 +9,9 @@ import {
   chats,
   messages,
   notifications,
+  advertisements,
+  adLikes,
+  adComments,
   type User,
   type UpsertUser,
   type Service,
@@ -26,6 +29,10 @@ import {
   type Chat,
   type Message,
   type InsertMessage,
+  type Advertisement,
+  type InsertAdvertisement,
+  type AdComment,
+  type InsertAdComment,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and, or, ilike, gte, lte, ne } from "drizzle-orm";
@@ -86,6 +93,19 @@ export interface IStorage {
   createNotification(notification: any): Promise<any>;
   markNotificationAsRead(notificationId: string): Promise<void>;
   markAllNotificationsAsRead(userId: string): Promise<void>;
+  
+  // Advertisement operations
+  getAdvertisements(filters?: { category?: string; search?: string; limit?: number }): Promise<Advertisement[]>;
+  getAdvertisementById(id: string): Promise<Advertisement | undefined>;
+  createAdvertisement(ad: InsertAdvertisement): Promise<Advertisement>;
+  updateAdvertisement(id: string, updates: Partial<InsertAdvertisement>): Promise<Advertisement>;
+  deleteAdvertisement(id: string): Promise<void>;
+  getAdvertisementsByUser(userId: string): Promise<Advertisement[]>;
+  likeAdvertisement(adId: string, userId: string): Promise<void>;
+  unlikeAdvertisement(adId: string, userId: string): Promise<void>;
+  shareAdvertisement(adId: string): Promise<void>;
+  getAdComments(adId: string): Promise<AdComment[]>;
+  createAdComment(comment: InsertAdComment): Promise<AdComment>;
   
   // KYC operations
   getKycData(userId: string): Promise<any>;
@@ -557,6 +577,108 @@ export class DatabaseStorage implements IStorage {
       accountNumber,
       bankName,
     };
+  }
+
+  // Advertisement operations
+  async getAdvertisements(filters?: { category?: string; search?: string; limit?: number }): Promise<Advertisement[]> {
+    let query = this.db.select().from(advertisements);
+    
+    if (filters?.category) {
+      query = query.where(eq(advertisements.category, filters.category));
+    }
+    if (filters?.search) {
+      query = query.where(
+        or(
+          ilike(advertisements.title, `%${filters.search}%`),
+          ilike(advertisements.description, `%${filters.search}%`)
+        )
+      );
+    }
+    
+    query = query.orderBy(desc(advertisements.createdAt));
+    
+    if (filters?.limit) {
+      query = query.limit(filters.limit);
+    }
+    
+    return await query;
+  }
+
+  async getAdvertisementById(id: string): Promise<Advertisement | undefined> {
+    const [ad] = await this.db.select().from(advertisements).where(eq(advertisements.id, id));
+    return ad;
+  }
+
+  async createAdvertisement(ad: InsertAdvertisement): Promise<Advertisement> {
+    const [newAd] = await this.db.insert(advertisements).values(ad).returning();
+    return newAd;
+  }
+
+  async updateAdvertisement(id: string, updates: Partial<InsertAdvertisement>): Promise<Advertisement> {
+    const [updatedAd] = await this.db
+      .update(advertisements)
+      .set(updates)
+      .where(eq(advertisements.id, id))
+      .returning();
+    return updatedAd;
+  }
+
+  async deleteAdvertisement(id: string): Promise<void> {
+    await this.db.delete(advertisements).where(eq(advertisements.id, id));
+  }
+
+  async getAdvertisementsByUser(userId: string): Promise<Advertisement[]> {
+    return await this.db.select().from(advertisements)
+      .where(eq(advertisements.userId, userId))
+      .orderBy(desc(advertisements.createdAt));
+  }
+
+  async likeAdvertisement(adId: string, userId: string): Promise<void> {
+    // Check if already liked
+    const existingLike = await this.db.select().from(adLikes)
+      .where(and(eq(adLikes.adId, adId), eq(adLikes.userId, userId)))
+      .limit(1);
+    
+    if (existingLike.length === 0) {
+      await this.db.insert(adLikes).values({ adId, userId });
+      await this.db.update(advertisements)
+        .set({ likes: sql`${advertisements.likes} + 1` })
+        .where(eq(advertisements.id, adId));
+    }
+  }
+
+  async unlikeAdvertisement(adId: string, userId: string): Promise<void> {
+    const deleted = await this.db.delete(adLikes)
+      .where(and(eq(adLikes.adId, adId), eq(adLikes.userId, userId)));
+    
+    if (deleted) {
+      await this.db.update(advertisements)
+        .set({ likes: sql`${advertisements.likes} - 1` })
+        .where(eq(advertisements.id, adId));
+    }
+  }
+
+  async shareAdvertisement(adId: string): Promise<void> {
+    await this.db.update(advertisements)
+      .set({ shares: sql`${advertisements.shares} + 1` })
+      .where(eq(advertisements.id, adId));
+  }
+
+  async getAdComments(adId: string): Promise<AdComment[]> {
+    return await this.db.select().from(adComments)
+      .where(eq(adComments.adId, adId))
+      .orderBy(desc(adComments.createdAt));
+  }
+
+  async createAdComment(comment: InsertAdComment): Promise<AdComment> {
+    const [newComment] = await this.db.insert(adComments).values(comment).returning();
+    
+    // Update comment count
+    await this.db.update(advertisements)
+      .set({ comments: sql`${advertisements.comments} + 1` })
+      .where(eq(advertisements.id, comment.adId));
+    
+    return newComment;
   }
 }
 

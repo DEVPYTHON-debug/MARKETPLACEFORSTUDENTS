@@ -20,6 +20,7 @@ import ManageBid from "@/pages/manage-bid";
 import Chat from "@/pages/chat";
 import Notifications from "@/pages/notifications";
 import KYC from "@/pages/kyc";
+import Advertisements from "@/pages/advertisements";
 import ManualLogin from "@/pages/manual-login";
 import NotFound from "@/pages/not-found";
 
@@ -69,6 +70,7 @@ function Router() {
       <Route path="/chat" component={Chat} />
       <Route path="/notifications" component={Notifications} />
       <Route path="/kyc" component={KYC} />
+      <Route path="/advertisements" component={Advertisements} />
       <Route component={NotFound} />
     </Switch>
   );

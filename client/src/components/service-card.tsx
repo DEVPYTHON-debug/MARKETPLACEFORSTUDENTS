@@ -153,6 +153,18 @@ export default function ServiceCard({ service }: ServiceCardProps) {
             Manage Service
           </Button>
         )}
+        
+        {!isServiceProvider && (
+          <div className="flex space-x-2 mt-2">
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="flex-1 border-gray-700 hover:border-neon-blue"
+            >
+              Chat
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

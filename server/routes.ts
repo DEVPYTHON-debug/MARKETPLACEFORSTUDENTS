@@ -12,6 +12,8 @@ import {
   insertOrderSchema,
   insertReviewSchema,
   insertTransactionSchema,
+  insertAdvertisementSchema,
+  insertAdCommentSchema,
 } from "@shared/schema";
 
 // Helper function to get user ID from both auth methods
@@ -330,7 +332,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
         bidderId: userId,
       });
       const bid = await storage.createBid(bidData);
+      
+      // Get gig details to notify the gig owner
+      const gig = await storage.getGigById(req.params.gigId);
+      if (gig && gig.clientId !== userId) {
+        await storage.createNotification({
+          userId: gig.clientId,
+          title: "New Bid Received",
+          message: `Someone placed a bid of ₦${req.body.amount} on your gig "${gig.title}"`,
+          type: "bid",
+          relatedId: bid.id,
+          isRead: false
+        });
+      }
+      
       res.status(201).json(bid);
+    } catch (error) {
+      console.error("Error creating bid:", error);
+      res.status(500).json({ message: "Failed to create bid" });
+    }
+  });
+
+  // Add missing general bid route  
+  app.post('/api/bids', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const bidData = insertBidSchema.parse({
+        ...req.body,
+        bidderId: userId,
+      });
+      const bid = await storage.createBid(bidData);
+      
+      // Get gig details to notify the gig owner
+      const gig = await storage.getGigById(req.body.gigId);
+      if (gig && gig.clientId !== userId) {
+        await storage.createNotification({
+          userId: gig.clientId,
+          title: "New Bid Received",
+          message: `Someone placed a bid of ₦${req.body.amount} on your gig "${gig.title}"`,
+          type: "bid",
+          relatedId: bid.id,
+          isRead: false
+        });
+      }
+      
+      res.status(200).json(bid);
     } catch (error) {
       console.error("Error creating bid:", error);
       res.status(500).json({ message: "Failed to create bid" });
@@ -425,6 +471,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         clientId: userId,
       });
       const order = await storage.createOrder(orderData);
+      
+      // Get service details to notify the provider
+      if (req.body.serviceId) {
+        const service = await storage.getServiceById(req.body.serviceId);
+        if (service && service.providerId !== userId) {
+          await storage.createNotification({
+            userId: service.providerId,
+            title: "New Service Booking",
+            message: `Your service "${service.title}" has been booked for ₦${req.body.amount}`,
+            type: "booking",
+            relatedId: order.id,
+            isRead: false
+          });
+        }
+      }
+      
       res.status(201).json(order);
     } catch (error) {
       console.error("Error creating order:", error);

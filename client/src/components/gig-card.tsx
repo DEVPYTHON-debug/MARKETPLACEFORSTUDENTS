@@ -222,6 +222,17 @@ export default function GigCard({ gig, showBidButton = false, isOwner = false }:
                     Manage
                   </Button>
                 )}
+                
+                {showBidButton && !isGigOwner && (
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="border-gray-700 hover:border-neon-green"
+                  >
+                    <MessageCircle className="w-4 h-4 mr-1" />
+                    Chat
+                  </Button>
+                )}
               </div>
             )}
           </div>

@@ -173,6 +173,39 @@ export const notifications = pgTable("notifications", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Advertisements table
+export const advertisements = pgTable("advertisements", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  title: varchar("title").notNull(),
+  description: text("description").notNull(),
+  imageUrl: varchar("image_url"),
+  price: varchar("price"),
+  category: varchar("category").notNull(),
+  location: varchar("location"),
+  isActive: boolean("is_active").default(true),
+  likes: integer("likes").default(0),
+  shares: integer("shares").default(0),
+  comments: integer("comments").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const adLikes = pgTable("ad_likes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  adId: uuid("ad_id").notNull().references(() => advertisements.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const adComments = pgTable("ad_comments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  adId: uuid("ad_id").notNull().references(() => advertisements.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   services: many(services),
@@ -344,6 +377,20 @@ export const insertTransactionSchema = createInsertSchema(transactions).omit({
   createdAt: true,
 });
 
+export const insertAdvertisementSchema = createInsertSchema(advertisements).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  likes: true,
+  shares: true,
+  comments: true,
+});
+
+export const insertAdCommentSchema = createInsertSchema(adComments).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -362,3 +409,7 @@ export type Transaction = typeof transactions.$inferSelect;
 export type Chat = typeof chats.$inferSelect;
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = typeof messages.$inferInsert;
+export type Advertisement = typeof advertisements.$inferSelect;
+export type InsertAdvertisement = z.infer<typeof insertAdvertisementSchema>;
+export type AdComment = typeof adComments.$inferSelect;
+export type InsertAdComment = z.infer<typeof insertAdCommentSchema>;
