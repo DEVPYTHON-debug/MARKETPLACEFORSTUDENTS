@@ -51,7 +51,6 @@ export default function Advertisements() {
     description: "",
     price: "",
     category: "",
-    location: "",
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -87,7 +86,7 @@ export default function Advertisements() {
         description: "Your advertisement has been posted successfully.",
       });
       setIsCreateDialogOpen(false);
-      setNewAd({ title: "", description: "", price: "", category: "", location: "" });
+      setNewAd({ title: "", description: "", price: "", category: "" });
       setSelectedFile(null);
       queryClient.invalidateQueries({ queryKey: ["/api/advertisements"] });
     },
