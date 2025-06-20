@@ -459,6 +459,11 @@ export class DatabaseStorage implements IStorage {
     return message;
   }
 
+  async createChat(chatData: any): Promise<Chat> {
+    const [newChat] = await db.insert(chats).values(chatData).returning();
+    return newChat;
+  }
+
   // Analytics
   async getUserStats(userId: string): Promise<{
     completedOrders: number;
