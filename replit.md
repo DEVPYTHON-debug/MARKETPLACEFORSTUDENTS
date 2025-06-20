@@ -148,6 +148,11 @@ Preferred communication style: Simple, everyday language.
 ✓ Added helpful chat tips and guidance for users
 ✓ Added back button to marketplace that redirects to dashboard
 ✓ Fixed database connection issue by creating PostgreSQL database
+✓ Fixed chat UI responsiveness issues with proper scrolling and input positioning
+✓ Eliminated duplicate users in chat list to show unique conversations only
+✓ Added auto-scroll functionality to keep latest messages visible
+✓ Enhanced file attachment display with proper preview capabilities
+✓ Resolved message initialization error for stable chat functionality
 
 ## Changelog
 

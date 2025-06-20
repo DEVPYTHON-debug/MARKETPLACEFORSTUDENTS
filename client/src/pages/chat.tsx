@@ -62,13 +62,6 @@ export default function Chat() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Auto-scroll to bottom when messages change
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: chats = [] } = useQuery<Chat[]>({
@@ -89,6 +82,13 @@ export default function Chat() {
     enabled: !!selectedChatId,
     refetchInterval: 2000, // Refresh messages every 2 seconds
   });
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
 
   // Helper functions
   const getOtherParticipant = (chat: Chat) => {
