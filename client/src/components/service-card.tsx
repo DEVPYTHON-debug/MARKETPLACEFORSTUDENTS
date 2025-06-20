@@ -4,6 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Star, MapPin } from "lucide-react";
 import { useLocation } from "wouter";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface ServiceCardProps {
   service: {
@@ -29,9 +32,38 @@ interface ServiceCardProps {
 export default function ServiceCard({ service }: ServiceCardProps) {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
   
   // Check if the current user is the provider of this service
   const isServiceProvider = user?.id === service.providerId || user?.id === service.provider?.id;
+
+  const bookServiceMutation = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error('Please log in to book services');
+      
+      return apiRequest("POST", "/api/orders", {
+        serviceId: service.id,
+        providerId: service.providerId,
+        clientId: user.id,
+        amount: service.price,
+        type: "service"
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Service Booked!",
+        description: "Your service has been booked successfully. Check your orders for details.",
+      });
+      setLocation("/dashboard");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Booking Failed",
+        description: error.message || "Failed to book service. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
   const mockImages = [
     "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200",
     "https://images.unsplash.com/photo-1581092160562-40aa08e78837?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200",
@@ -104,8 +136,12 @@ export default function ServiceCard({ service }: ServiceCardProps) {
         )}
         
         {!isServiceProvider && (
-          <Button className="w-full neon-gradient hover:shadow-neon-orange transition-all">
-            Book Now
+          <Button 
+            className="w-full neon-gradient hover:shadow-neon-orange transition-all"
+            onClick={() => bookServiceMutation.mutate()}
+            disabled={bookServiceMutation.isPending}
+          >
+            {bookServiceMutation.isPending ? "Booking..." : "Book Now"}
           </Button>
         )}
         {isServiceProvider && (

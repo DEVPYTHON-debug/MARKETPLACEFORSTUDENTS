@@ -5,6 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { MessageCircle, Calendar, DollarSign, Users } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useLocation } from "wouter";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 interface GigCardProps {
   gig: {
@@ -30,9 +38,43 @@ interface GigCardProps {
 export default function GigCard({ gig, showBidButton = false, isOwner = false }: GigCardProps) {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [bidAmount, setBidAmount] = useState("");
+  const [bidDescription, setBidDescription] = useState("");
   
   // Check if the current user is the owner of this gig
   const isGigOwner = user?.id === gig.clientId;
+
+  const placeBidMutation = useMutation({
+    mutationFn: async (bidData: { amount: string; proposal: string }) => {
+      if (!user) throw new Error('Please log in to place bids');
+      
+      return apiRequest("POST", "/api/bids", {
+        gigId: gig.id,
+        bidderId: user.id,
+        amount: bidData.amount,
+        proposal: bidData.proposal
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Bid Submitted!",
+        description: "Your bid has been submitted successfully.",
+      });
+      setIsDialogOpen(false);
+      setBidAmount("");
+      setBidDescription("");
+      queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Bid Failed",
+        description: error.message || "Failed to submit bid. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const formatDeadline = (deadline: string) => {
     try {
@@ -109,9 +151,64 @@ export default function GigCard({ gig, showBidButton = false, isOwner = false }:
             {(showBidButton || isOwner) && (
               <div className="flex items-center space-x-2 mt-4">
                 {showBidButton && !isGigOwner && (
-                  <Button size="sm" className="neon-gradient flex-1">
-                    Place Bid
-                  </Button>
+                  <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" className="neon-gradient flex-1">
+                        Place Bid
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-gray-900 border-gray-700">
+                      <DialogHeader>
+                        <DialogTitle className="text-white">Place Your Bid</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="bidAmount" className="text-gray-300">
+                            Bid Amount (₦)
+                          </Label>
+                          <Input
+                            id="bidAmount"
+                            type="number"
+                            placeholder="Enter your bid amount"
+                            value={bidAmount}
+                            onChange={(e) => setBidAmount(e.target.value)}
+                            className="bg-gray-800 border-gray-700 text-white"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="bidDescription" className="text-gray-300">
+                            Proposal Description
+                          </Label>
+                          <Textarea
+                            id="bidDescription"
+                            placeholder="Describe your approach and why you're the best fit..."
+                            value={bidDescription}
+                            onChange={(e) => setBidDescription(e.target.value)}
+                            className="bg-gray-800 border-gray-700 text-white min-h-[100px]"
+                          />
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button
+                            onClick={() => placeBidMutation.mutate({
+                              amount: bidAmount,
+                              proposal: bidDescription
+                            })}
+                            disabled={!bidAmount || !bidDescription || placeBidMutation.isPending}
+                            className="neon-gradient flex-1"
+                          >
+                            {placeBidMutation.isPending ? "Submitting..." : "Submit Bid"}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => setIsDialogOpen(false)}
+                            className="border-gray-700"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 )}
                 
                 {(isOwner || isGigOwner) && (
