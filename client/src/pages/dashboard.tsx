@@ -318,8 +318,7 @@ export default function Dashboard() {
                       <div className="flex-1">
                         <p className="text-white text-sm">{transaction.description}</p>
                         <p className="text-gray-400 text-xs">
-                          {new Date(transaction.createdAt).toRelativeString?.() || 
-                           new Date(transaction.createdAt).toLocaleDateString()}
+                          {new Date(transaction.createdAt).toLocaleDateString()}
                         </p>
                       </div>
                       <span className={`font-medium text-sm ${

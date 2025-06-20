@@ -135,6 +135,14 @@ export const chats = pgTable("chats", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const messages = pgTable("messages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  chatId: uuid("chat_id").notNull().references(() => chats.id),
+  senderId: varchar("sender_id").notNull().references(() => users.id),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   services: many(services),
@@ -230,7 +238,7 @@ export const transactionsRelations = relations(transactions, ({ one }) => ({
   }),
 }));
 
-export const chatsRelations = relations(chats, ({ one }) => ({
+export const chatsRelations = relations(chats, ({ one, many }) => ({
   order: one(orders, {
     fields: [chats.orderId],
     references: [orders.id],
@@ -238,6 +246,18 @@ export const chatsRelations = relations(chats, ({ one }) => ({
   gig: one(gigs, {
     fields: [chats.gigId],
     references: [gigs.id],
+  }),
+  messages: many(messages),
+}));
+
+export const messagesRelations = relations(messages, ({ one }) => ({
+  chat: one(chats, {
+    fields: [messages.chatId],
+    references: [chats.id],
+  }),
+  sender: one(users, {
+    fields: [messages.senderId],
+    references: [users.id],
   }),
 }));
 
@@ -261,6 +281,8 @@ export const insertGigSchema = createInsertSchema(gigs).omit({
   updatedAt: true,
   bidCount: true,
   selectedBidId: true,
+}).extend({
+  deadline: z.string().transform((str) => new Date(str)),
 });
 
 export const insertBidSchema = createInsertSchema(bids).omit({
@@ -300,3 +322,5 @@ export type Review = typeof reviews.$inferSelect;
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 export type Transaction = typeof transactions.$inferSelect;
 export type Chat = typeof chats.$inferSelect;
+export type Message = typeof messages.$inferSelect;
+export type InsertMessage = typeof messages.$inferInsert;

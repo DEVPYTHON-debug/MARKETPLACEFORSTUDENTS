@@ -13,6 +13,7 @@ import AddMoney from "@/pages/add-money";
 import EditProfile from "@/pages/edit-profile";
 import CreateService from "@/pages/create-service";
 import CreateGig from "@/pages/create-gig";
+import Chat from "@/pages/chat";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -32,6 +33,7 @@ function Router() {
           <Route path="/edit-profile" component={EditProfile} />
           <Route path="/create-service" component={CreateService} />
           <Route path="/create-gig" component={CreateGig} />
+          <Route path="/chat" component={Chat} />
         </>
       )}
       <Route component={NotFound} />

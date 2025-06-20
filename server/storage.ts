@@ -7,6 +7,7 @@ import {
   reviews,
   transactions,
   chats,
+  messages,
   type User,
   type UpsertUser,
   type Service,
@@ -22,6 +23,8 @@ import {
   type Transaction,
   type InsertTransaction,
   type Chat,
+  type Message,
+  type InsertMessage,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and, or, ilike, gte, lte } from "drizzle-orm";
@@ -68,6 +71,8 @@ export interface IStorage {
   
   // Chat operations
   getChatsByUser(userId: string): Promise<Chat[]>;
+  getMessagesByChat(chatId: string): Promise<Message[]>;
+  createMessage(message: InsertMessage): Promise<Message>;
   
   // Analytics
   getUserStats(userId: string): Promise<{
@@ -375,6 +380,32 @@ export class DatabaseStorage implements IStorage {
       .from(chats)
       .where(sql`${userId} = ANY(${chats.participants})`)
       .orderBy(desc(chats.lastMessageAt));
+  }
+
+  async getMessagesByChat(chatId: string): Promise<Message[]> {
+    return await db
+      .select()
+      .from(messages)
+      .where(eq(messages.chatId, chatId))
+      .orderBy(messages.createdAt);
+  }
+
+  async createMessage(messageData: InsertMessage): Promise<Message> {
+    const [message] = await db
+      .insert(messages)
+      .values(messageData)
+      .returning();
+    
+    // Update chat's last message
+    await db
+      .update(chats)
+      .set({
+        lastMessage: messageData.content,
+        lastMessageAt: new Date(),
+      })
+      .where(eq(chats.id, messageData.chatId));
+    
+    return message;
   }
 
   // Analytics

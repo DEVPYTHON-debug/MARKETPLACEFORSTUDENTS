@@ -91,7 +91,7 @@ export default function CreateGig() {
       description: description.trim(),
       category,
       budget: budget.trim(),
-      deadline: deadlineDate.toISOString()
+      deadline: deadline // Send as string, will be transformed by schema
     });
   };
 

@@ -67,6 +67,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(service);
     } catch (error) {
       console.error("Error creating service:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ 
+          message: "Validation error", 
+          details: error.errors 
+        });
+      }
       res.status(500).json({ message: "Failed to create service" });
     }
   });
@@ -123,6 +129,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(gig);
     } catch (error) {
       console.error("Error creating gig:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ 
+          message: "Validation error", 
+          details: error.errors 
+        });
+      }
       res.status(500).json({ message: "Failed to create gig" });
     }
   });
@@ -295,7 +307,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const transaction = await storage.createTransaction({
         userId,
         type: "deposit",
-        amount: amount.toString(),
+        amount: parseFloat(amount).toString(),
         description,
         status: "completed"
       });
@@ -332,7 +344,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const transaction = await storage.createTransaction({
         userId,
         type: "withdrawal",
-        amount: amount.toString(),
+        amount: parseFloat(amount).toString(),
         description,
         status: "completed"
       });
@@ -357,6 +369,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching chats:", error);
       res.status(500).json({ message: "Failed to fetch chats" });
+    }
+  });
+
+  app.get('/api/chats/:chatId/messages', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { chatId } = req.params;
+      
+      // Verify user is participant in this chat
+      const chat = await storage.getChatsByUser(userId);
+      const userChat = chat.find(c => c.id === chatId);
+      
+      if (!userChat) {
+        return res.status(403).json({ message: "Access denied to this chat" });
+      }
+      
+      const messages = await storage.getMessagesByChat(chatId);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      res.status(500).json({ message: "Failed to fetch messages" });
+    }
+  });
+
+  app.post('/api/chats/:chatId/messages', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { chatId } = req.params;
+      const { content } = req.body;
+      
+      if (!content?.trim()) {
+        return res.status(400).json({ message: "Message content is required" });
+      }
+      
+      // Verify user is participant in this chat
+      const userChats = await storage.getChatsByUser(userId);
+      const userChat = userChats.find(c => c.id === chatId);
+      
+      if (!userChat) {
+        return res.status(403).json({ message: "Access denied to this chat" });
+      }
+      
+      const message = await storage.createMessage({
+        chatId,
+        senderId: userId,
+        content: content.trim()
+      });
+      
+      res.status(201).json(message);
+    } catch (error) {
+      console.error("Error creating message:", error);
+      res.status(500).json({ message: "Failed to send message" });
     }
   });
 
