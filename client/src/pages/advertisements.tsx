@@ -257,7 +257,7 @@ export default function Advertisements() {
             <SelectValue placeholder="All Categories" />
           </SelectTrigger>
           <SelectContent className="bg-gray-800 border-gray-700">
-            <SelectItem value="" className="text-white">All Categories</SelectItem>
+            <SelectItem value="all" className="text-white">All Categories</SelectItem>
             {categories.map((category) => (
               <SelectItem key={category} value={category} className="text-white">
                 {category}
