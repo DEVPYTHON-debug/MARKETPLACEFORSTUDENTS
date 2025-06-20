@@ -231,16 +231,7 @@ export default function Advertisements() {
                 </div>
               </div>
               
-              <div>
-                <Label htmlFor="location" className="text-gray-300">Location</Label>
-                <Input
-                  id="location"
-                  value={newAd.location}
-                  onChange={(e) => setNewAd({ ...newAd, location: e.target.value })}
-                  className="bg-gray-800 border-gray-700 text-white"
-                  placeholder="City, State"
-                />
-              </div>
+
               
               <div>
                 <Label htmlFor="image" className="text-gray-300">Image</Label>
