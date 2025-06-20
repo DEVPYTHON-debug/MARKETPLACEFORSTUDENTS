@@ -25,6 +25,19 @@ interface GigCardProps {
 }
 
 export default function GigCard({ gig, showBidButton = false, isOwner = false }: GigCardProps) {
+  const { user } = useAuth();
+  
+  // Check if the current user is the owner of this gig
+  const isGigOwner = user?.id === gig.clientId;
+
+  const formatDeadline = (deadline: string) => {
+    try {
+      return formatDistanceToNow(new Date(deadline), { addSuffix: true });
+    } catch {
+      return deadline;
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'open':
@@ -38,15 +51,6 @@ export default function GigCard({ gig, showBidButton = false, isOwner = false }:
       default:
         return 'bg-gray-500 bg-opacity-20 text-gray-400 border-gray-500';
     }
-  };
-
-  const formatDeadline = (deadline: string) => {
-    const date = new Date(deadline);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
-    });
   };
 
   return (

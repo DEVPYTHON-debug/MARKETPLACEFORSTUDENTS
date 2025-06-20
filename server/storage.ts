@@ -8,6 +8,7 @@ import {
   transactions,
   chats,
   messages,
+  notifications,
   type User,
   type UpsertUser,
   type Service,

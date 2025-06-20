@@ -26,7 +26,7 @@ export default function ServiceCard({ service }: ServiceCardProps) {
   const { user } = useAuth();
   
   // Check if the current user is the provider of this service
-  const isServiceProvider = user?.id === service.provider?.id;
+  const isServiceProvider = user?.id === service.providerId;
   const mockImages = [
     "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200",
     "https://images.unsplash.com/photo-1581092160562-40aa08e78837?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200",
@@ -98,9 +98,16 @@ export default function ServiceCard({ service }: ServiceCardProps) {
           </div>
         )}
         
-        <Button className="w-full neon-gradient hover:shadow-neon-orange transition-all">
-          Book Now
-        </Button>
+        {!isServiceProvider && (
+          <Button className="w-full neon-gradient hover:shadow-neon-orange transition-all">
+            Book Now
+          </Button>
+        )}
+        {isServiceProvider && (
+          <Button variant="outline" className="w-full border-gray-700 hover:border-neon-orange">
+            Manage Service
+          </Button>
+        )}
       </CardContent>
     </Card>
   );
