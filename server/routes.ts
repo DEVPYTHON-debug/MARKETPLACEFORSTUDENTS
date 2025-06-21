@@ -327,9 +327,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req);
       const bidData = insertBidSchema.parse({
-        ...req.body,
-        gigId: req.params.gigId,
+        gigId: req.body.gigId,
         bidderId: userId,
+        amount: req.body.amount,
+        message: req.body.message, // Correct field for schema
+        deliveryTime: req.body.deliveryTime || "7 days",
+        status: "pending"
       });
       const bid = await storage.createBid(bidData);
       
@@ -365,7 +368,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         gigId: req.body.gigId,
         bidderId: userId,
         amount: req.body.amount,
-        proposal: req.body.proposal,
+        message: req.body.message, // Correct field for schema
         deliveryTime: req.body.deliveryTime || "7 days",
         status: "pending"
       });
